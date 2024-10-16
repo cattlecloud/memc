@@ -5,6 +5,7 @@ package memc
 
 import (
 	"math"
+	"strconv"
 	"testing"
 
 	"github.com/shoenig/test/must"
@@ -13,6 +14,41 @@ import (
 type person struct {
 	Name string
 	Age  int
+}
+
+func TestClient_pick(t *testing.T) {
+	t.Parallel()
+
+	t.Run("single", func(t *testing.T) {
+		c := New(SetServer("localhost"))
+
+		result := c.pick("foo")
+		must.Eq(t, "localhost", result)
+
+		result = c.pick("bar")
+		must.Eq(t, "localhost", result)
+	})
+
+	t.Run("multi", func(t *testing.T) {
+		c := New(
+			SetServer("one.local"),
+			SetServer("two.local"),
+			SetServer("three.local"),
+		)
+
+		counts := make(map[string]int)
+
+		for i := 0; i < 1000; i++ {
+			key := strconv.Itoa(i)
+			result := c.pick(key)
+			counts[result]++
+		}
+
+		// ensure reasonable distribution
+		must.Greater(t, 200, counts["one.local"])
+		must.Greater(t, 200, counts["two.local"])
+		must.Greater(t, 200, counts["three.local"])
+	})
 }
 
 func Test_encode(t *testing.T) {
