@@ -1,7 +1,7 @@
 set shell := ["bash", "-c"]
 
-# vet, lint, and test the source tree
-default: vet lint test
+# tidy, vet, lint, and test the source tree
+default: tidy vet lint test
 
 # run go test on source tree
 test:
@@ -21,3 +21,6 @@ lint:
 # run go vet on source tree
 vet:
     go vet ./...
+
+tidy:
+    go mod tidy
