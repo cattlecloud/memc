@@ -8,9 +8,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/gob"
+	"sort"
+	"sync"
 )
 
 type Client struct {
+	lock    sync.RWMutex
 	servers []string
 }
 
@@ -18,7 +21,11 @@ type ClientOption func(c *Client)
 
 func SetServer(address string) ClientOption {
 	return func(c *Client) {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+
 		c.servers = append(c.servers, address)
+		sort.Strings(c.servers)
 	}
 }
 
@@ -28,6 +35,25 @@ func New(opts ...ClientOption) *Client {
 		opt(c)
 	}
 	return c
+}
+
+func (c *Client) pick(key string) string {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	if len(c.servers) == 1 {
+		return c.servers[0]
+	}
+
+	// compute the server to choose for key
+	// deterministic given set of servers and key
+	x := byte(37)
+	for _, c := range key {
+		x ^= byte(c)
+	}
+	idx := int(int(x) % len(c.servers))
+
+	return c.servers[idx]
 }
 
 func encode(item any) ([]byte, error) {

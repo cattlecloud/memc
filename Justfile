@@ -3,24 +3,25 @@ set shell := ["bash", "-c"]
 # tidy, vet, lint, and test the source tree
 default: tidy vet lint test
 
-# run go test on source tree
+# run tests
 test:
     go test -count=1 -v -race ./...
 
-# apply copywrite headers to source tree
+# scan for missing copywrite headers
 copywrite:
     copywrite \
         --config .github/workflows/scripts/copywrite.hcl headers \
         --spdx "BSD-3-Clause"
 
-# apply golang linter to source tree
+# lint source with golangci-lint
 lint:
     golangci-lint run \
         --config .github/workflows/scripts/golangci.yaml
 
-# run go vet on source tree
+# scan source with go ver
 vet:
     go vet ./...
 
+# tidy go modules
 tidy:
     go mod tidy
