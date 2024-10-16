@@ -11,10 +11,15 @@ var (
 )
 
 func Set[T any](c *Client, key string, item T) error {
+	_ = c
+	_ = key
+	_ = item
 	return nil
 }
 
 func Get[T any](c *Client, key string) (T, error) {
+	_ = c
+	_ = key
 	var empty T
 	return empty, nil
 }

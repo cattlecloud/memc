@@ -16,6 +16,8 @@ type person struct {
 }
 
 func Test_encode(t *testing.T) {
+	t.Parallel()
+
 	t.Run("[]byte", func(t *testing.T) {
 		b, err := encode([]byte{2, 4, 6, 8})
 		must.NoError(t, err)
@@ -85,7 +87,7 @@ func Test_encode(t *testing.T) {
 	})
 
 	t.Run("int", func(t *testing.T) {
-		var i int = math.MaxInt
+		var i = math.MaxInt
 		b, err := encode(i)
 		must.NoError(t, err)
 		must.SliceLen(t, 8, b)
@@ -110,6 +112,8 @@ func Test_encode(t *testing.T) {
 }
 
 func Test_decode(t *testing.T) {
+	t.Parallel()
+
 	t.Run("[]byte", func(t *testing.T) {
 		result, err := decode[[]byte]([]byte{1, 2})
 		must.NoError(t, err)
