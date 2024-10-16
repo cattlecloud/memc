@@ -31,56 +31,48 @@ func New(opts ...ClientOption) *Client {
 }
 
 func encode(item any) ([]byte, error) {
-	switch item.(type) {
+	switch v := item.(type) {
 	case []byte:
-		return item.([]byte), nil
+		return v, nil
 	case string:
-		return []byte(item.(string)), nil
+		return []byte(v), nil
 	case int8:
-		b := byte(item.(int8))
+		b := byte(v)
 		return []byte{b}, nil
 	case uint8:
-		b := byte(item.(uint8))
+		b := byte(v)
 		return []byte{b}, nil
 	case int16:
 		b := make([]byte, 2)
-		i := item.(int16)
-		binary.LittleEndian.PutUint16(b, uint16(i))
+		binary.LittleEndian.PutUint16(b, uint16(v))
 		return b, nil
 	case uint16:
 		b := make([]byte, 2)
-		i := item.(uint16)
-		binary.LittleEndian.PutUint16(b, i)
+		binary.LittleEndian.PutUint16(b, v)
 		return b, nil
 	case int32:
 		b := make([]byte, 4)
-		i := item.(int32)
-		binary.LittleEndian.PutUint32(b, uint32(i))
+		binary.LittleEndian.PutUint32(b, uint32(v))
 		return b, nil
 	case uint32:
 		b := make([]byte, 4)
-		i := item.(uint32)
-		binary.LittleEndian.PutUint32(b, i)
+		binary.LittleEndian.PutUint32(b, v)
 		return b, nil
 	case int64:
 		b := make([]byte, 8)
-		i := item.(int64)
-		binary.LittleEndian.PutUint64(b, uint64(i))
+		binary.LittleEndian.PutUint64(b, uint64(v))
 		return b, nil
 	case uint64:
 		b := make([]byte, 8)
-		i := item.(uint64)
-		binary.LittleEndian.PutUint64(b, i)
+		binary.LittleEndian.PutUint64(b, v)
 		return b, nil
 	case int:
 		b := make([]byte, 8)
-		i := item.(int)
-		binary.LittleEndian.PutUint64(b, uint64(i))
+		binary.LittleEndian.PutUint64(b, uint64(v))
 		return b, nil
 	case uint:
 		b := make([]byte, 8)
-		i := item.(uint)
-		binary.LittleEndian.PutUint64(b, uint64(i))
+		binary.LittleEndian.PutUint64(b, uint64(v))
 		return b, nil
 	default:
 		buf := new(bytes.Buffer)
