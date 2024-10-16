@@ -1,3 +1,6 @@
+// Copyright (c) The Noxide Project Authors
+// SPDX-License-Identifier: BSD-3-Clause
+
 package memc
 
 import "errors"
