@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 )
 
 var (
@@ -16,11 +17,55 @@ var (
 	ErrNotStored   = errors.New("memc: item not stored")
 	ErrNotFound    = errors.New("memc: item not found")
 	ErrConflict    = errors.New("memc: CAS conflict")
+	ErrExpiration  = errors.New("memc: expiration ttl is not valid")
 )
 
-func Set[T any](c *Client, key string, item T) error {
+// Options contains configuration parameters that may be applied when executing
+// a verb like Get, Set, etc.
+type Options struct {
+	expiration time.Duration
+	flags      int
+}
+
+// Option to apply when executing a verb like Get, Set, etc.
+type Option func(o *Options)
+
+// TTL applies the given expiration time to set on the value being set.
+//
+// The expiration must be greater than 1 second, or 0, indicating the value will
+// not expire automatically.
+func TTL(expiration time.Duration) Option {
+	return func(o *Options) {
+		o.expiration = expiration
+	}
+}
+
+// Flags applies the given flags on the value being set.
+func Flags(flags int) Option {
+	return func(o *Options) {
+		o.flags = flags
+	}
+}
+
+// Set the key to contain the value of item.
+//
+// Uses Client c to connect to a memcached instance, and automatically handles
+// connection pooling and reuse.
+//
+// One or more Option(s) may be applied to configure things such as the
+// value expiration TTL or its associated flags.
+func Set[T any](c *Client, key string, item T, opts ...Option) error {
 	if err := check(key); err != nil {
 		return err
+	}
+
+	options := &Options{
+		expiration: c.expiration,
+		flags:      0,
+	}
+
+	for _, opt := range opts {
+		opt(options)
 	}
 
 	rw, cerr := c.getConn(key)
@@ -28,18 +73,21 @@ func Set[T any](c *Client, key string, item T) error {
 		return cerr
 	}
 
-	flags := 0
-	expiration := 0
 	bs, nerr := encode(item)
 	if nerr != nil {
 		return nerr
+	}
+
+	expiration, serr := seconds(options.expiration)
+	if serr != nil {
+		return serr
 	}
 
 	// write the header components
 	if _, err := fmt.Fprintf(
 		rw,
 		"set %s %d %d %d\r\n",
-		key, flags, expiration, len(bs),
+		key, options.flags, expiration, len(bs),
 	); err != nil {
 		return err
 	}

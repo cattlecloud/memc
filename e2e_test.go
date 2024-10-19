@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shoenig/ignore"
 	"github.com/shoenig/test/must"
 	"github.com/shoenig/test/portal"
 	"github.com/shoenig/test/skip"
@@ -65,10 +66,8 @@ func TestE2E_SetGet_simple(t *testing.T) {
 	address, done := launchTCP(t, nil)
 	t.Cleanup(done)
 
-	c := New(
-		SetServer(address),
-	)
-	defer func() { _ = c.Close() }()
+	c := New(SetServer(address))
+	defer ignore.Close(c)
 
 	t.Run("string", func(t *testing.T) {
 		err := Set(c, "mystring", "myvalue")
@@ -120,5 +119,20 @@ func TestE2E_SetGet_simple(t *testing.T) {
 		v, err = Get[person](c, "myperson_v")
 		must.NoError(t, err)
 		must.Eq(t, person{Name: "Seth", Age: 34}, v)
+	})
+}
+
+func Test_SetGet_expiration(t *testing.T) {
+	t.Parallel()
+
+	address, done := launchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New(SetServer(address))
+	defer ignore.Close(c)
+
+	t.Run("hour", func(t *testing.T) {
+		err := Set(c, "mykey", "myvalue", TTL(1*time.Hour))
+		must.NoError(t, err)
 	})
 }

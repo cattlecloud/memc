@@ -8,9 +8,45 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/shoenig/test/must"
 )
+
+func Test_SetDialTimeout(t *testing.T) {
+	t.Parallel()
+
+	c := New(SetDialTimeout(4 * time.Second))
+	must.Eq(t, 4*time.Second, c.timeout)
+}
+
+func Test_SetDefaultTTL(t *testing.T) {
+	t.Parallel()
+
+	c := New(SetDefaultTTL(2 * time.Hour))
+	must.Eq(t, 2*time.Hour, c.expiration)
+}
+
+func Test_seconds(t *testing.T) {
+	t.Parallel()
+
+	t.Run("zero", func(t *testing.T) {
+		s, err := seconds(0)
+		must.NoError(t, err)
+		must.Zero(t, s)
+	})
+
+	t.Run("millis", func(t *testing.T) {
+		_, err := seconds(250 * time.Millisecond)
+		must.ErrorIs(t, err, ErrExpiration)
+	})
+
+	t.Run("seconds", func(t *testing.T) {
+		s, err := seconds(4 * time.Second)
+		must.NoError(t, err)
+		must.Eq(t, 4, s)
+	})
+}
 
 func Test_check(t *testing.T) {
 	t.Parallel()

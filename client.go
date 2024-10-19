@@ -14,10 +14,12 @@ import (
 )
 
 type Client struct {
+	timeout    time.Duration
+	expiration time.Duration
+
 	lock    sync.RWMutex
 	servers []string
 	conns   []net.Conn
-	timeout time.Duration
 }
 
 func (c *Client) getConn(key string) (*bufio.ReadWriter, error) {
@@ -66,6 +68,10 @@ func SetServer(address string) ClientOption {
 	}
 }
 
+// SetDialTimeout adjusts the amount of time to wait on establishing a TCP
+// connection to the memached instance(s).
+//
+// If unset the default timeout is 5 seconds.
 func SetDialTimeout(timeout time.Duration) ClientOption {
 	return func(c *Client) {
 		c.lock.Lock()
@@ -74,13 +80,30 @@ func SetDialTimeout(timeout time.Duration) ClientOption {
 	}
 }
 
+// SetDefaultTTL adjusts the default expiration time of values set into the memcached
+// instance(s).
+//
+// If unset the default expiration TTL is 1 hour.
+//
+// The expiration time must be more than 1 second, or set to 0 to indicate no
+// expiration time (and values stay in the cache indefinitely).
+func SetDefaultTTL(expiration time.Duration) ClientOption {
+	return func(c *Client) {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+		c.expiration = expiration
+	}
+}
+
 const (
-	defaultDialTimeout = 3 * time.Second
+	defaultDialTimeout = 5 * time.Second
+	defaultExpiration  = 1 * time.Hour
 )
 
 func New(opts ...ClientOption) *Client {
 	c := new(Client)
 	c.timeout = defaultDialTimeout
+	c.expiration = defaultExpiration
 
 	for _, opt := range opts {
 		opt(c)
@@ -130,4 +153,17 @@ func (c *Client) pick(key string) int {
 	idx := int(int(x) % len(c.servers))
 
 	return idx
+}
+
+func seconds(expiration time.Duration) (int, error) {
+	if expiration == 0 {
+		return 0, nil
+	}
+
+	if expiration < 1*time.Second {
+		return 0, ErrExpiration
+	}
+
+	s := int(expiration.Seconds())
+	return s, nil
 }
