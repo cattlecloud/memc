@@ -2,3 +2,5 @@ github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/shoenig/test v1.11.0 h1:NoPa5GIoBwuqzIviCrnUJa+t5Xb4xi5Z+zODJnIDsEQ=
 github.com/shoenig/test v1.11.0/go.mod h1:UxJ6u/x2v/TNs/LoLxBNJRV9DiwBBKYxXSyczsBHFoI=
+noxide.lol/go/xtc v0.2.0 h1:KxgaQ28Moc4T0O22wuj3698rhB0srAWoTpAhtgp4DXA=
+noxide.lol/go/xtc v0.2.0/go.mod h1:WaIsAXK/e1jY8EP00bXYoUAxGS4Jevbwc2JnKeyt5F8=

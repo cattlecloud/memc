@@ -4,31 +4,121 @@
 package memc
 
 import (
+	"fmt"
+	"net"
+	"os/exec"
 	"testing"
+	"time"
 
 	"github.com/shoenig/test/must"
+	"github.com/shoenig/test/portal"
 	"github.com/shoenig/test/skip"
+	"github.com/shoenig/test/wait"
+	"noxide.lol/go/xtc"
 )
 
-// nolint:paralleltest
-func TestE2E_Set(t *testing.T) {
-	skip.CommandUnavailable(t, "memcached")
+const (
+	executable = "memcached"
+)
 
-	c := New(SetServer("localhost:11211"))
+type fatalTester struct{}
+
+func (ft *fatalTester) Fatalf(msg string, args ...any) {
+	s := fmt.Sprintf(msg, args...)
+	panic(s)
+}
+
+var (
+	fatal = new(fatalTester)
+	ports = portal.New(fatal)
+)
+
+func launchTCP(t *testing.T, args []string) (string, func()) {
+	// requires memcached executable on $PATH
+	skip.CommandUnavailable(t, executable)
+
+	port := ports.One()
+	address := fmt.Sprintf("localhost:%d", port)
+	args = append(args, "-l", address)
+
+	ctx, cancel := xtc.Cancelable()
+	cmd := exec.CommandContext(ctx, executable, args...)
+	err := cmd.Start()
+	must.NoError(t, err)
+
+	// wait for memcached to be listening
+	must.Wait(t, wait.InitialSuccess(
+		wait.Timeout(3*time.Second),
+		wait.Gap(200*time.Millisecond),
+		wait.ErrorFunc(func() error {
+			_, err := net.Dial("tcp", address)
+			return err
+		}),
+	))
+
+	return address, cancel
+}
+
+func TestE2E_SetGet_simple(t *testing.T) {
+	t.Parallel()
+
+	address, done := launchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New(
+		SetServer(address),
+	)
 	defer func() { _ = c.Close() }()
 
-	err := Set(c, "key1", "value1")
-	must.NoError(t, err)
+	t.Run("string", func(t *testing.T) {
+		err := Set(c, "mystring", "myvalue")
+		must.NoError(t, err)
 
-	err = Set(c, "key2", &person{Name: "bob", Age: 34})
-	must.NoError(t, err)
+		var v string
+		v, err = Get[string](c, "mystring")
+		must.NoError(t, err)
+		must.Eq(t, "myvalue", v)
+	})
 
-	v, verr := Get[string](c, "key1")
-	must.NoError(t, verr)
-	must.Eq(t, "value1", v)
+	t.Run("[]byte", func(t *testing.T) {
+		err := Set(c, "mybytes", []byte{2, 4, 6, 8})
+		must.NoError(t, err)
 
-	v2, verr2 := Get[*person](c, "key2")
-	must.NoError(t, verr2)
-	must.Eq(t, "bob", v2.Name)
-	must.Eq(t, 34, v2.Age)
+		var v []byte
+		v, err = Get[[]byte](c, "mybytes")
+		must.NoError(t, err)
+		must.Eq(t, []byte{2, 4, 6, 8}, v)
+	})
+
+	t.Run("int", func(t *testing.T) {
+		err := Set(c, "myint", 998877)
+		must.NoError(t, err)
+
+		var v int
+		v, err = Get[int](c, "myint")
+		must.NoError(t, err)
+		must.Eq(t, 998877, v)
+	})
+
+	t.Run("struct pointer", func(t *testing.T) {
+		p := &person{Name: "Seth", Age: 34}
+		err := Set(c, "myperson_p", p)
+		must.NoError(t, err)
+
+		var v *person
+		v, err = Get[*person](c, "myperson_p")
+		must.NoError(t, err)
+		must.Eq(t, &person{Name: "Seth", Age: 34}, v)
+	})
+
+	t.Run("struct value", func(t *testing.T) {
+		p := person{Name: "Seth", Age: 34}
+		err := Set(c, "myperson_v", p)
+		must.NoError(t, err)
+
+		var v person
+		v, err = Get[person](c, "myperson_v")
+		must.NoError(t, err)
+		must.Eq(t, person{Name: "Seth", Age: 34}, v)
+	})
 }
