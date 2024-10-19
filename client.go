@@ -1,20 +1,44 @@
 // Copyright (c) The Noxide Project Authors
 // SPDX-License-Identifier: BSD-3-Clause
 
-// Package memc provides a modern, efficient memcached client for Go.
 package memc
 
 import (
-	"bytes"
-	"encoding/binary"
-	"encoding/gob"
+	"errors"
+	"net"
+	"regexp"
 	"sort"
 	"sync"
+	"time"
 )
 
 type Client struct {
 	lock    sync.RWMutex
 	servers []string
+	conns   []net.Conn
+	timeout time.Duration
+}
+
+func (c *Client) getConn(key string) (net.Conn, error) {
+	idx := c.pick(key)
+
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	var err error
+	conn := c.conns[idx]
+	if conn == nil {
+		conn, err = c.open(c.servers[idx])
+		c.conns[idx] = conn
+	}
+	return conn, err
+}
+
+func (c *Client) open(address string) (net.Conn, error) {
+	// TODO: unix socket
+	// and probably more
+
+	return net.DialTimeout("tcp", address, c.timeout)
 }
 
 type ClientOption func(c *Client)
@@ -24,25 +48,68 @@ func SetServer(address string) ClientOption {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 
+		c.conns = append(c.conns, nil)
 		c.servers = append(c.servers, address)
 		sort.Strings(c.servers)
+
+		// TODO massive bug; but we should replace all this with a reusable
+		// connection pool per address anyway
 	}
 }
+
+func SetDialTimeout(timeout time.Duration) ClientOption {
+	return func(c *Client) {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+		c.timeout = timeout
+	}
+}
+
+const (
+	defaultDialTimeout = 3 * time.Second
+)
 
 func New(opts ...ClientOption) *Client {
 	c := new(Client)
+	c.timeout = defaultDialTimeout
+
 	for _, opt := range opts {
 		opt(c)
 	}
+
 	return c
 }
 
-func (c *Client) pick(key string) string {
+var (
+	keyRe = regexp.MustCompile(`^[^\s]{1,250}$`)
+)
+
+func check(key string) error {
+	if !keyRe.MatchString(key) {
+		return ErrKeyNotValid
+	}
+	return nil
+}
+
+func (c *Client) Close() error {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	var errs error
+	for _, conn := range c.conns {
+		if err := conn.Close(); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+	return errs
+}
+
+func (c *Client) pick(key string) int {
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
 	if len(c.servers) == 1 {
-		return c.servers[0]
+		return 0
 	}
 
 	// compute the server to choose for key
@@ -53,115 +120,5 @@ func (c *Client) pick(key string) string {
 	}
 	idx := int(int(x) % len(c.servers))
 
-	return c.servers[idx]
-}
-
-func encode(item any) ([]byte, error) {
-	switch v := item.(type) {
-	case []byte:
-		return v, nil
-	case string:
-		return []byte(v), nil
-	case int8:
-		b := byte(v)
-		return []byte{b}, nil
-	case uint8:
-		b := byte(v)
-		return []byte{b}, nil
-	case int16:
-		b := make([]byte, 2)
-		binary.LittleEndian.PutUint16(b, uint16(v))
-		return b, nil
-	case uint16:
-		b := make([]byte, 2)
-		binary.LittleEndian.PutUint16(b, v)
-		return b, nil
-	case int32:
-		b := make([]byte, 4)
-		binary.LittleEndian.PutUint32(b, uint32(v))
-		return b, nil
-	case uint32:
-		b := make([]byte, 4)
-		binary.LittleEndian.PutUint32(b, v)
-		return b, nil
-	case int64:
-		b := make([]byte, 8)
-		binary.LittleEndian.PutUint64(b, uint64(v))
-		return b, nil
-	case uint64:
-		b := make([]byte, 8)
-		binary.LittleEndian.PutUint64(b, v)
-		return b, nil
-	case int:
-		b := make([]byte, 8)
-		binary.LittleEndian.PutUint64(b, uint64(v))
-		return b, nil
-	case uint:
-		b := make([]byte, 8)
-		binary.LittleEndian.PutUint64(b, uint64(v))
-		return b, nil
-	default:
-		buf := new(bytes.Buffer)
-		enc := gob.NewEncoder(buf)
-		err := enc.Encode(item)
-		return buf.Bytes(), err
-	}
-}
-
-func decode[T any](b []byte) (T, error) {
-	var result T
-	switch any(result).(type) {
-	case []byte:
-		tmp := any(b).(T)
-		return tmp, nil
-	case string:
-		s := string(b)
-		tmp := any(s).(T)
-		return tmp, nil
-	case int8:
-		i := int8(b[0])
-		tmp := any(i).(T)
-		return tmp, nil
-	case uint8:
-		i := b[0]
-		tmp := any(i).(T)
-		return tmp, nil
-	case int16:
-		i := int16(binary.LittleEndian.Uint16(b))
-		tmp := any(i).(T)
-		return tmp, nil
-	case uint16:
-		i := binary.LittleEndian.Uint16(b)
-		tmp := any(i).(T)
-		return tmp, nil
-	case int32:
-		i := int32(binary.LittleEndian.Uint32(b))
-		tmp := any(i).(T)
-		return tmp, nil
-	case uint32:
-		i := binary.LittleEndian.Uint32(b)
-		tmp := any(i).(T)
-		return tmp, nil
-	case int64:
-		i := int64(binary.LittleEndian.Uint64(b))
-		tmp := any(i).(T)
-		return tmp, nil
-	case uint64:
-		i := binary.LittleEndian.Uint64(b)
-		tmp := any(i).(T)
-		return tmp, nil
-	case int:
-		i := int(binary.LittleEndian.Uint64(b))
-		tmp := any(i).(T)
-		return tmp, nil
-	case uint:
-		i := uint(binary.LittleEndian.Uint64(b))
-		tmp := any(i).(T)
-		return tmp, nil
-	default:
-		buf := bytes.NewBuffer(b)
-		dec := gob.NewDecoder(buf)
-		err := dec.Decode(&result)
-		return result, err
-	}
+	return idx
 }

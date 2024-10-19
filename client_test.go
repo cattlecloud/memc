@@ -6,10 +6,43 @@ package memc
 import (
 	"math"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/shoenig/test/must"
 )
+
+func Test_check(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty", func(t *testing.T) {
+		must.ErrorIs(t, check(""), ErrKeyNotValid)
+	})
+
+	t.Run("normal", func(t *testing.T) {
+		must.NoError(t, check("normal"))
+	})
+
+	t.Run("max", func(t *testing.T) {
+		s := strings.Repeat("a", 250)
+		must.NoError(t, check(s))
+	})
+
+	t.Run("long", func(t *testing.T) {
+		s := strings.Repeat("a", 251)
+		must.ErrorIs(t, check(s), ErrKeyNotValid)
+	})
+
+	t.Run("space", func(t *testing.T) {
+		s := "abc 123"
+		must.ErrorIs(t, check(s), ErrKeyNotValid)
+	})
+
+	t.Run("tab", func(t *testing.T) {
+		s := "abc\t123"
+		must.ErrorIs(t, check(s), ErrKeyNotValid)
+	})
+}
 
 type person struct {
 	Name string
@@ -23,10 +56,10 @@ func TestClient_pick(t *testing.T) {
 		c := New(SetServer("localhost"))
 
 		result := c.pick("foo")
-		must.Eq(t, "localhost", result)
+		must.Eq(t, 0, result)
 
 		result = c.pick("bar")
-		must.Eq(t, "localhost", result)
+		must.Eq(t, 0, result)
 	})
 
 	t.Run("multi", func(t *testing.T) {
@@ -36,7 +69,7 @@ func TestClient_pick(t *testing.T) {
 			SetServer("three.local"),
 		)
 
-		counts := make(map[string]int)
+		counts := make(map[int]int)
 
 		for i := 0; i < 1000; i++ {
 			key := strconv.Itoa(i)
@@ -45,9 +78,9 @@ func TestClient_pick(t *testing.T) {
 		}
 
 		// ensure reasonable distribution
-		must.Greater(t, 200, counts["one.local"])
-		must.Greater(t, 200, counts["two.local"])
-		must.Greater(t, 200, counts["three.local"])
+		must.Greater(t, 200, counts[0])
+		must.Greater(t, 200, counts[1])
+		must.Greater(t, 200, counts[2])
 	})
 }
 
