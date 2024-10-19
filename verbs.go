@@ -23,17 +23,11 @@ func Set[T any](c *Client, key string, item T) error {
 		return err
 	}
 
-	conn, cerr := c.getConn(key)
+	rw, cerr := c.getConn(key)
 	if cerr != nil {
 		return cerr
 	}
 
-	rw := bufio.NewReadWriter(
-		bufio.NewReader(conn),
-		bufio.NewWriter(conn),
-	)
-
-	const verb = "set"
 	flags := 0
 	expiration := 0
 	bs, nerr := encode(item)
@@ -44,8 +38,8 @@ func Set[T any](c *Client, key string, item T) error {
 	// write the header components
 	if _, err := fmt.Fprintf(
 		rw,
-		"%s %s %d %d %d\r\n",
-		verb, key, flags, expiration, len(bs),
+		"set %s %d %d %d\r\n",
+		key, flags, expiration, len(bs),
 	); err != nil {
 		return err
 	}
@@ -112,20 +106,13 @@ func Get[T any](c *Client, key string) (T, error) {
 		return empty, err
 	}
 
-	conn, cerr := c.getConn(key)
+	rw, cerr := c.getConn(key)
 	if cerr != nil {
 		return empty, cerr
 	}
 
-	rw := bufio.NewReadWriter(
-		bufio.NewReader(conn),
-		bufio.NewWriter(conn),
-	)
-
-	const verb = "get"
-
 	// write the header components
-	if _, err := fmt.Fprintf(rw, "%s %s\r\n", verb, key); err != nil {
+	if _, err := fmt.Fprintf(rw, "get %s\r\n", key); err != nil {
 		return empty, err
 	}
 

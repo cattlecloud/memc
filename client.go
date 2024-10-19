@@ -4,6 +4,7 @@
 package memc
 
 import (
+	"bufio"
 	"errors"
 	"net"
 	"regexp"
@@ -19,7 +20,7 @@ type Client struct {
 	timeout time.Duration
 }
 
-func (c *Client) getConn(key string) (net.Conn, error) {
+func (c *Client) getConn(key string) (*bufio.ReadWriter, error) {
 	idx := c.pick(key)
 
 	c.lock.Lock()
@@ -31,7 +32,15 @@ func (c *Client) getConn(key string) (net.Conn, error) {
 		conn, err = c.open(c.servers[idx])
 		c.conns[idx] = conn
 	}
-	return conn, err
+
+	// wrap the connection in a buffer - note that we must now always
+	// remember to flush when done writing
+	rw := bufio.NewReadWriter(
+		bufio.NewReader(conn),
+		bufio.NewWriter(conn),
+	)
+
+	return rw, err
 }
 
 func (c *Client) open(address string) (net.Conn, error) {
