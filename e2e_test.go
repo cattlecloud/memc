@@ -136,3 +136,16 @@ func Test_SetGet_expiration(t *testing.T) {
 		must.NoError(t, err)
 	})
 }
+
+func Test_Get_miss(t *testing.T) {
+	t.Parallel()
+
+	address, done := launchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	_, err := Get[string](c, "missing")
+	must.ErrorIs(t, err, ErrCacheMiss)
+}
