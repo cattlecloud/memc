@@ -21,7 +21,7 @@ go get noxide.lol/go/memc@latest
 
 ```go
 client := memc.New(
-  SetServer("localhost:11211"),
+  []string{"localhost:11211"},
 )
 
 err := memc.Set(client, "my/key/name", "some_value")
@@ -53,9 +53,11 @@ memcached instance address.
 
 ```go
 client := memc.New(
-  SetServer("10.0.0.101:11211"),
-  SetServer("10.0.0.102:11211"),
-  SetServer("10.0.0.103:11211"),
+  []string{
+    "10.0.0.1:11211",
+    "10.0.0.2:11211",
+    "10.0.0.3:11211",
+  },
 )
 ```
 

@@ -46,17 +46,6 @@ func (c *Client) getConn(key string) (*bufio.ReadWriter, error) {
 
 type ClientOption func(c *Client)
 
-// SetServer appends the given server address to the list of memcached instances
-// available for storing data.
-func SetServer(address string) ClientOption {
-	return func(c *Client) {
-		c.lock.Lock()
-		defer c.lock.Unlock()
-
-		c.addrs = append(c.addrs, address)
-	}
-}
-
 // SetIdleConnections adjusts the maximum number of idle connections to maintain
 // for each memcached instance.
 //
@@ -104,8 +93,9 @@ const (
 	defaultExpiration  = 1 * time.Hour
 )
 
-func New(opts ...ClientOption) *Client {
+func New(instances []string, opts ...ClientOption) *Client {
 	c := new(Client)
+	c.addrs = instances
 	c.timeout = defaultDialTimeout
 	c.expiration = defaultExpiration
 	c.idle = 1

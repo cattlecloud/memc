@@ -15,14 +15,14 @@ import (
 func Test_SetDialTimeout(t *testing.T) {
 	t.Parallel()
 
-	c := New(SetDialTimeout(4 * time.Second))
+	c := New(nil, SetDialTimeout(4*time.Second))
 	must.Eq(t, 4*time.Second, c.timeout)
 }
 
 func Test_SetDefaultTTL(t *testing.T) {
 	t.Parallel()
 
-	c := New(SetDefaultTTL(2 * time.Hour))
+	c := New(nil, SetDefaultTTL(2*time.Hour))
 	must.Eq(t, 2*time.Hour, c.expiration)
 }
 

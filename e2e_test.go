@@ -66,7 +66,7 @@ func TestE2E_SetGet_simple(t *testing.T) {
 	address, done := launchTCP(t, nil)
 	t.Cleanup(done)
 
-	c := New(SetServer(address))
+	c := New([]string{address})
 	defer ignore.Close(c)
 
 	t.Run("string", func(t *testing.T) {
@@ -128,7 +128,7 @@ func Test_SetGet_expiration(t *testing.T) {
 	address, done := launchTCP(t, nil)
 	t.Cleanup(done)
 
-	c := New(SetServer(address))
+	c := New([]string{address})
 	defer ignore.Close(c)
 
 	t.Run("hour", func(t *testing.T) {
