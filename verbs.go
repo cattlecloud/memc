@@ -183,6 +183,11 @@ func getPayload(r *bufio.Reader) ([]byte, error) {
 		return nil, err
 	}
 
+	// key was not found, is a cache miss
+	if string(b) == "END\r\n" {
+		return nil, ErrCacheMiss
+	}
+
 	// TODO: does not handle CAS value for now
 	expect := "VALUE %s %d %d\r\n"
 	var (
