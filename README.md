@@ -9,7 +9,7 @@ October 2024:
 
 ### Getting Started
 
-The `memc` package can be added to a project by running:
+The `memc` package can be added to a Go project with `go get`.
 
 ```shell
 go get noxide.lol/go/memc@latest
