@@ -5,7 +5,6 @@ package memc
 
 import (
 	"math"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -83,41 +82,6 @@ func Test_check(t *testing.T) {
 type person struct {
 	Name string
 	Age  int
-}
-
-func TestClient_pick(t *testing.T) {
-	t.Parallel()
-
-	t.Run("single", func(t *testing.T) {
-		c := New(SetServer("localhost"))
-
-		result := c.pick("foo")
-		must.Eq(t, 0, result)
-
-		result = c.pick("bar")
-		must.Eq(t, 0, result)
-	})
-
-	t.Run("multi", func(t *testing.T) {
-		c := New(
-			SetServer("one.local"),
-			SetServer("two.local"),
-			SetServer("three.local"),
-		)
-
-		counts := make(map[int]int)
-
-		for i := 0; i < 1000; i++ {
-			key := strconv.Itoa(i)
-			result := c.pick(key)
-			counts[result]++
-		}
-
-		// ensure reasonable distribution
-		must.Greater(t, 200, counts[0])
-		must.Greater(t, 200, counts[1])
-		must.Greater(t, 200, counts[2])
-	})
 }
 
 func Test_encode(t *testing.T) {

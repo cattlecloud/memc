@@ -5,34 +5,32 @@ package memc
 
 import (
 	"bufio"
-	"errors"
-	"net"
 	"regexp"
-	"sort"
 	"sync"
 	"time"
 )
 
+// A Client is used for making network requests to memcached instances.
+//
+// Use the package functions Set, Get, Delete, etc. by providing this Client to
+// manage data in memcached.
 type Client struct {
 	timeout    time.Duration
 	expiration time.Duration
+	idle       int
 
-	lock    sync.RWMutex
-	servers []string
-	conns   []net.Conn
+	lock  sync.Mutex
+	addrs []string
+	pools *pools
 }
 
 func (c *Client) getConn(key string) (*bufio.ReadWriter, error) {
-	idx := c.pick(key)
-
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	var err error
-	conn := c.conns[idx]
-	if conn == nil {
-		conn, err = c.open(c.servers[idx])
-		c.conns[idx] = conn
+	conn, err := c.pools.get(key)
+	if err != nil {
+		return nil, err
 	}
 
 	// wrap the connection in a buffer - note that we must now always
@@ -41,30 +39,34 @@ func (c *Client) getConn(key string) (*bufio.ReadWriter, error) {
 		bufio.NewReader(conn),
 		bufio.NewWriter(conn),
 	)
-
 	return rw, err
-}
-
-func (c *Client) open(address string) (net.Conn, error) {
-	// TODO: unix socket
-	// and probably more
-
-	return net.DialTimeout("tcp", address, c.timeout)
 }
 
 type ClientOption func(c *Client)
 
+// SetServer appends the given server address to the list of memcached instances
+// available for storing data.
 func SetServer(address string) ClientOption {
 	return func(c *Client) {
 		c.lock.Lock()
 		defer c.lock.Unlock()
 
-		c.conns = append(c.conns, nil)
-		c.servers = append(c.servers, address)
-		sort.Strings(c.servers)
+		c.addrs = append(c.addrs, address)
+	}
+}
 
-		// TODO massive bug; but we should replace all this with a reusable
-		// connection pool per address anyway
+// SetIdleConnections adjusts the maximum number of idle connections to maintain
+// for each memcached instance.
+//
+// If unset the default idle connection limit is 1.
+//
+// Note that idle connections are created on demand, not at startup.
+func SetIdleConnections(count int) ClientOption {
+	return func(c *Client) {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+
+		c.idle = count
 	}
 }
 
@@ -104,11 +106,14 @@ func New(opts ...ClientOption) *Client {
 	c := new(Client)
 	c.timeout = defaultDialTimeout
 	c.expiration = defaultExpiration
+	c.idle = 1
 
 	for _, opt := range opts {
 		opt(c)
 	}
 
+	c.pools = new(pools)
+	c.pools.create(c.addrs, c.timeout, c.idle)
 	return c
 }
 
@@ -123,36 +128,14 @@ func check(key string) error {
 	return nil
 }
 
+// Close will close all idle connections and prevent existing connections from
+// becoming idle. Future use of the Client will fail.
 func (c *Client) Close() error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	var errs error
-	for _, conn := range c.conns {
-		if err := conn.Close(); err != nil {
-			errs = errors.Join(errs, err)
-		}
-	}
-	return errs
-}
-
-func (c *Client) pick(key string) int {
-	c.lock.RLock()
-	defer c.lock.RUnlock()
-
-	if len(c.servers) == 1 {
-		return 0
-	}
-
-	// compute the server to choose for key
-	// deterministic given set of servers and key
-	x := byte(37)
-	for _, c := range key {
-		x ^= byte(c)
-	}
-	idx := int(int(x) % len(c.servers))
-
-	return idx
+	c.pools.close()
+	return nil
 }
 
 func seconds(expiration time.Duration) (int, error) {

@@ -4,5 +4,7 @@ github.com/shoenig/ignore v0.4.0 h1:qPOWs0slbPMtenC0H3cKvu5Kn3hQFTE3yK6YJvyNDlA=
 github.com/shoenig/ignore v0.4.0/go.mod h1:VF91FoiYAwXq4KinOq6zP5xfFw/Ib6MfftaGKYTpmwo=
 github.com/shoenig/test v1.11.0 h1:NoPa5GIoBwuqzIviCrnUJa+t5Xb4xi5Z+zODJnIDsEQ=
 github.com/shoenig/test v1.11.0/go.mod h1:UxJ6u/x2v/TNs/LoLxBNJRV9DiwBBKYxXSyczsBHFoI=
+noxide.lol/go/stacks v1.0.0 h1:g4MPkizQF/6B3u1ejGxWDIjL1zM/MSHMzoS1DEZTOWY=
+noxide.lol/go/stacks v1.0.0/go.mod h1:rwC8UA5l8uwwfRNAKuBSI+7hpP8ilJVK3gozAn7vjzM=
 noxide.lol/go/xtc v0.2.0 h1:KxgaQ28Moc4T0O22wuj3698rhB0srAWoTpAhtgp4DXA=
 noxide.lol/go/xtc v0.2.0/go.mod h1:WaIsAXK/e1jY8EP00bXYoUAxGS4Jevbwc2JnKeyt5F8=
