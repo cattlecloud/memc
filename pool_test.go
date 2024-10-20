@@ -113,7 +113,7 @@ func TestPools_close(t *testing.T) {
 
 	p.close()
 
-	_, err := p.get("anything")
+	_, _, err := p.get("anything")
 	must.ErrorIs(t, err, ErrClientClosed)
 }
 
@@ -138,7 +138,7 @@ func TestPool_get(t *testing.T) {
 		available: stacks.Simple[net.Conn](),
 	}
 
-	con, err := p.get()
+	con, _, err := p.get()
 	must.NoError(t, err)
 	must.Close(t, con)
 }
@@ -155,18 +155,18 @@ func TestPool_discard(t *testing.T) {
 		available: stacks.Simple[net.Conn](),
 	}
 
-	con1, err1 := p.get()
+	con1, _, err1 := p.get()
 	must.NoError(t, err1)
 
 	// puts the connection on the idle stack
 	p.discard(con1)
 	must.Eq(t, 1, p.available.Size())
 
-	con2, err2 := p.get()
+	con2, _, err2 := p.get()
 	must.NoError(t, err2)
 	must.Eq(t, 0, p.available.Size())
 
-	con3, err3 := p.get()
+	con3, _, err3 := p.get()
 	must.NoError(t, err3)
 
 	p.discard(con2) // remains open, idle
