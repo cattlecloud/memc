@@ -12,12 +12,13 @@ import (
 )
 
 var (
-	ErrCacheMiss   = errors.New("memc: cache miss")
-	ErrKeyNotValid = errors.New("memc: key is not valid")
-	ErrNotStored   = errors.New("memc: item not stored")
-	ErrNotFound    = errors.New("memc: item not found")
-	ErrConflict    = errors.New("memc: CAS conflict")
-	ErrExpiration  = errors.New("memc: expiration ttl is not valid")
+	ErrCacheMiss    = errors.New("memc: cache miss")
+	ErrKeyNotValid  = errors.New("memc: key is not valid")
+	ErrNotStored    = errors.New("memc: item not stored")
+	ErrNotFound     = errors.New("memc: item not found")
+	ErrConflict     = errors.New("memc: CAS conflict")
+	ErrExpiration   = errors.New("memc: expiration ttl is not valid")
+	ErrClientClosed = errors.New("memc: client has been closed")
 )
 
 // Options contains configuration parameters that may be applied when executing
@@ -133,18 +134,18 @@ func Add[T any](c *Client, key string, item T) error {
 	}
 
 	_ = c
-	_ = key
 	_ = item
-	return nil
+
+	panic("not yet implemented")
 }
 
 func Touch(c *Client, key string) error {
 	if err := check(key); err != nil {
 		return err
 	}
-
 	_ = c
-	return nil
+
+	panic("not yet implemented")
 }
 
 func Get[T any](c *Client, key string) (T, error) {
@@ -220,5 +221,6 @@ func Delete(c *Client, key string) error {
 	}
 
 	_ = c
-	return nil
+
+	panic("not yet implemented")
 }
