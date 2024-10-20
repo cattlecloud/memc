@@ -28,10 +28,11 @@ func (c *Client) getConn(key string) (*bufio.ReadWriter, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	conn, err := c.pools.get(key)
+	conn, done, err := c.pools.get(key)
 	if err != nil {
 		return nil, err
 	}
+	defer done()
 
 	// wrap the connection in a buffer - note that we must now always
 	// remember to flush when done writing
@@ -39,6 +40,7 @@ func (c *Client) getConn(key string) (*bufio.ReadWriter, error) {
 		bufio.NewReader(conn),
 		bufio.NewWriter(conn),
 	)
+
 	return rw, err
 }
 

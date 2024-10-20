@@ -53,7 +53,9 @@ func (p *pools) pick(key string) int {
 	return idx
 }
 
-func (p *pools) get(key string) (net.Conn, error) {
+type donef func()
+
+func (p *pools) get(key string) (net.Conn, donef, error) {
 	idx := p.pick(key)
 	spool := p.servers[idx]
 	return spool.get()
@@ -80,21 +82,23 @@ func (p *pool) close() {
 	}
 }
 
-func (p *pool) get() (net.Conn, error) {
+func (p *pool) get() (net.Conn, donef, error) {
 	if p.idle == closed {
-		return nil, ErrClientClosed
+		return nil, nil, ErrClientClosed
 	}
 
 	if p.available.Empty() {
 		conn, err := p.open()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return conn, nil
+		done := func() { p.discard(conn) }
+		return conn, done, nil
 	}
 
 	conn := p.available.Pop()
-	return conn, nil
+	done := func() { p.discard(conn) }
+	return conn, done, nil
 }
 
 func (p *pool) open() (net.Conn, error) {
