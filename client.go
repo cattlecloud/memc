@@ -4,10 +4,11 @@
 package memc
 
 import (
-	"bufio"
 	"regexp"
 	"sync"
 	"time"
+
+	"noxide.lol/go/memc/iopool"
 )
 
 // A Client is used for making network requests to memcached instances.
@@ -21,27 +22,21 @@ type Client struct {
 
 	lock  sync.Mutex
 	addrs []string
-	pools *pools
+	pools *iopool.Collection
 }
 
-func (c *Client) getConn(key string) (*bufio.ReadWriter, error) {
+func (c *Client) getConn(key string) (*iopool.Buffer, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	conn, done, err := c.pools.get(key)
-	if err != nil {
-		return nil, err
-	}
-	defer done()
+	return c.pools.Get(key)
+}
 
-	// wrap the connection in a buffer - note that we must now always
-	// remember to flush when done writing
-	rw := bufio.NewReadWriter(
-		bufio.NewReader(conn),
-		bufio.NewWriter(conn),
-	)
+func (c *Client) setConn(key string, conn *iopool.Buffer) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
-	return rw, err
+	c.pools.Return(key, conn)
 }
 
 type ClientOption func(c *Client)
@@ -91,6 +86,7 @@ func SetDefaultTTL(expiration time.Duration) ClientOption {
 const (
 	defaultDialTimeout = 5 * time.Second
 	defaultExpiration  = 1 * time.Hour
+	defaultIdleCount   = 1
 )
 
 func New(instances []string, opts ...ClientOption) *Client {
@@ -98,14 +94,13 @@ func New(instances []string, opts ...ClientOption) *Client {
 	c.addrs = instances
 	c.timeout = defaultDialTimeout
 	c.expiration = defaultExpiration
-	c.idle = 1
+	c.idle = defaultIdleCount
 
 	for _, opt := range opts {
 		opt(c)
 	}
 
-	c.pools = new(pools)
-	c.pools.create(c.addrs, c.timeout, c.idle)
+	c.pools = iopool.New(c.addrs, c.idle)
 	return c
 }
 
@@ -126,8 +121,7 @@ func (c *Client) Close() error {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	c.pools.close()
-	return nil
+	return c.pools.Close()
 }
 
 func seconds(expiration time.Duration) (int, error) {
@@ -141,4 +135,15 @@ func seconds(expiration time.Duration) (int, error) {
 
 	s := int(expiration.Seconds())
 	return s, nil
+}
+
+func (c *Client) do(key string, f func(*iopool.Buffer) error) error {
+	conn, err := c.getConn(key)
+	if err != nil {
+		return err
+	}
+	err = f(conn)
+	conn.SetHealth(err)
+	c.setConn(key, conn)
+	return err
 }
