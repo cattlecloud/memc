@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"io"
 	"time"
+
+	"noxide.lol/go/memc/iopool"
 )
 
 var (
@@ -69,63 +71,60 @@ func Set[T any](c *Client, key string, item T, opts ...Option) error {
 		opt(options)
 	}
 
-	rw, cerr := c.getConn(key)
-	if cerr != nil {
-		return cerr
-	}
+	return c.do(key, func(conn *iopool.Buffer) error {
+		encoding, encerr := encode(item)
+		if encerr != nil {
+			return encerr
+		}
 
-	bs, nerr := encode(item)
-	if nerr != nil {
-		return nerr
-	}
+		expiration, experr := seconds(options.expiration)
+		if experr != nil {
+			return experr
+		}
 
-	expiration, serr := seconds(options.expiration)
-	if serr != nil {
-		return serr
-	}
+		// write the header components
+		if _, err := fmt.Fprintf(
+			conn,
+			"set %s %d %d %d\r\n",
+			key, options.flags, expiration, len(encoding),
+		); err != nil {
+			return err
+		}
 
-	// write the header components
-	if _, err := fmt.Fprintf(
-		rw,
-		"set %s %d %d %d\r\n",
-		key, options.flags, expiration, len(bs),
-	); err != nil {
-		return err
-	}
+		// write the payload
+		if _, err := conn.Write(encoding); err != nil {
+			return err
+		}
 
-	// write the payload
-	if _, err := rw.Write(bs); err != nil {
-		return err
-	}
+		// write clrf
+		if _, err := io.WriteString(conn, "\r\n"); err != nil {
+			return err
+		}
 
-	// write clrf
-	if _, err := io.WriteString(rw, "\r\n"); err != nil {
-		return err
-	}
+		// flush the buffer
+		if err := conn.Flush(); err != nil {
+			return err
+		}
 
-	// flush the buffer
-	if err := rw.Flush(); err != nil {
-		return err
-	}
+		// read response
+		line, lerr := conn.ReadSlice('\n')
+		if lerr != nil {
+			return lerr
+		}
 
-	// read response
-	line, lerr := rw.ReadSlice('\n')
-	if lerr != nil {
-		return lerr
-	}
-
-	switch string(line) {
-	case "STORED\r\n":
-		return nil
-	case "NOT_STORED\r\n":
-		return ErrNotStored
-	case "EXISTS\r\n":
-		return ErrConflict
-	case "NOT_FOUND\r\n":
-		return ErrCacheMiss
-	default:
-		return fmt.Errorf("memc: unexpected response to set: %q", string(line))
-	}
+		switch string(line) {
+		case "STORED\r\n":
+			return nil
+		case "NOT_STORED\r\n":
+			return ErrNotStored
+		case "EXISTS\r\n":
+			return ErrConflict
+		case "NOT_FOUND\r\n":
+			return ErrCacheMiss
+		default:
+			return fmt.Errorf("memc: unexpected response to set: %q", string(line))
+		}
+	})
 }
 
 func Add[T any](c *Client, key string, item T) error {
@@ -149,32 +148,34 @@ func Touch(c *Client, key string) error {
 }
 
 func Get[T any](c *Client, key string) (T, error) {
-	var empty T
+	var result T
 
 	if err := check(key); err != nil {
-		return empty, err
+		return result, err
 	}
 
-	rw, cerr := c.getConn(key)
-	if cerr != nil {
-		return empty, cerr
-	}
+	err := c.do(key, func(conn *iopool.Buffer) error {
+		// write the header components
+		if _, err := fmt.Fprintf(conn, "get %s\r\n", key); err != nil {
+			return err
+		}
 
-	// write the header components
-	if _, err := fmt.Fprintf(rw, "get %s\r\n", key); err != nil {
-		return empty, err
-	}
+		// flush the connection, forcing bytes over the wire
+		if err := conn.Flush(); err != nil {
+			return err
+		}
 
-	if err := rw.Flush(); err != nil {
-		return empty, err
-	}
+		// read the response payload
+		payload, err := getPayload(conn.Reader)
+		if err != nil {
+			return err
+		}
 
-	payload, perr := getPayload(rw.Reader)
-	if perr != nil {
-		return empty, perr
-	}
+		result, err = decode[T](payload)
+		return err
+	})
 
-	return decode[T](payload)
+	return result, err
 }
 
 func getPayload(r *bufio.Reader) ([]byte, error) {
