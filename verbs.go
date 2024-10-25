@@ -147,6 +147,7 @@ func Touch(c *Client, key string) error {
 	panic("not yet implemented")
 }
 
+// Get the value associated with the given key.
 func Get[T any](c *Client, key string) (T, error) {
 	var result T
 
