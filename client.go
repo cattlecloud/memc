@@ -89,6 +89,11 @@ const (
 	defaultIdleCount   = 1
 )
 
+// New creates a new Client capable of sharding across the given set of
+// instances and pooling connections to each instance.
+//
+// Certain behaviors can be configured by specifying one or more ClientOption
+// options.
 func New(instances []string, opts ...ClientOption) *Client {
 	c := new(Client)
 	c.addrs = instances
