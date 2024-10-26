@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
+	"strings"
 	"time"
 
 	"noxide.lol/go/memc/iopool"
@@ -21,6 +23,8 @@ var (
 	ErrConflict     = errors.New("memc: CAS conflict")
 	ErrExpiration   = errors.New("memc: expiration ttl is not valid")
 	ErrClientClosed = errors.New("memc: client has been closed")
+	ErrNegativeInc  = errors.New("memc: increment delta must be non-negative")
+	ErrNonNumeric   = errors.New("memc: cannot increment non-numeric value")
 )
 
 // Options contains configuration parameters that may be applied when executing
@@ -318,6 +322,63 @@ func Delete(c *Client, key string) error {
 			return unexpected(line)
 		}
 	})
+}
+
+func Increment[T Countable](c *Client, key string, delta T) (T, error) {
+	if err := check(key); err != nil {
+		return T(0), err
+	}
+
+	if delta < 0 {
+		return T(0), ErrNegativeInc
+	}
+
+	var result T
+
+	err := c.do(key, func(conn *iopool.Buffer) error {
+		// write the header components
+		if _, err := fmt.Fprintf(
+			conn,
+			"incr %s %d\r\n",
+			key, delta,
+		); err != nil {
+			return err
+		}
+
+		// flush the buffer
+		if err := conn.Flush(); err != nil {
+			return err
+		}
+
+		// read the response
+		line, lerr := conn.ReadSlice('\n')
+		if lerr != nil {
+			return lerr
+		}
+
+		// check for error response
+		s := string(line)
+		switch {
+		case s == "NOT_FOUND\r\n":
+			return ErrNotFound
+		case strings.Contains(s, "cannot increment or decrement non-numeric value"):
+			return ErrNonNumeric
+		}
+
+		// parse response as the resulting value
+		s = strings.TrimSpace(s)
+		u, uerr := strconv.ParseUint(s, 10, 64)
+		if uerr != nil {
+			return unexpected(line)
+		}
+
+		// recast to value type
+		result = T(u)
+
+		return nil
+	})
+
+	return result, err
 }
 
 func unexpected(response []byte) error {
