@@ -149,3 +149,29 @@ func Test_Get_miss(t *testing.T) {
 	_, err := Get[string](c, "missing")
 	must.ErrorIs(t, err, ErrCacheMiss)
 }
+
+func Test_Delete(t *testing.T) {
+	t.Parallel()
+
+	address, done := launchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	t.Run("not found", func(t *testing.T) {
+		err := Delete(c, "does-not-exist")
+		must.ErrorIs(t, err, ErrNotFound)
+	})
+
+	t.Run("success", func(t *testing.T) {
+		err := Set(c, "key1", "value1")
+		must.NoError(t, err)
+
+		err = Delete(c, "key1")
+		must.NoError(t, err)
+
+		err = Delete(c, "key1")
+		must.ErrorIs(t, err, ErrNotFound)
+	})
+}

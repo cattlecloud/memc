@@ -216,7 +216,7 @@ func getPayload(r *bufio.Reader) ([]byte, error) {
 		return nil, err
 	}
 	if string(b) != "END\r\n" {
-		return nil, fmt.Errorf("unexpected response from memcache %q", string(b))
+		return nil, unexpected(b)
 	}
 
 	return payload, err
@@ -227,7 +227,40 @@ func Delete(c *Client, key string) error {
 		return err
 	}
 
-	_ = c
+	return c.do(key, func(conn *iopool.Buffer) error {
+		// write the header components
+		if _, err := fmt.Fprintf(
+			conn,
+			"delete %s\r\n",
+			key,
+		); err != nil {
+			return err
+		}
 
-	panic("not yet implemented")
+		// flush the buffer
+		if err := conn.Flush(); err != nil {
+			return err
+		}
+
+		line, lerr := conn.ReadSlice('\n')
+		if lerr != nil {
+			return lerr
+		}
+
+		switch string(line) {
+		case "DELETED\r\n":
+			return nil
+		case "NOT_FOUND\r\n":
+			return ErrNotFound
+		default:
+			return unexpected(line)
+		}
+	})
+}
+
+func unexpected(response []byte) error {
+	return fmt.Errorf(
+		"unexpected response from memcached %q",
+		string(response),
+	)
 }
