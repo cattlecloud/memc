@@ -252,3 +252,43 @@ func Test_Increment(t *testing.T) {
 		must.Eq(t, 1002, v)
 	})
 }
+
+func Test_Decrement(t *testing.T) {
+	t.Parallel()
+
+	address, done := launchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	t.Run("unset", func(t *testing.T) {
+		_, err := Decrement(c, "counter-a", 0)
+		must.ErrorIs(t, err, ErrNotFound)
+	})
+
+	t.Run("negative", func(t *testing.T) {
+		err := Set(c, "counter-b", "100")
+		must.NoError(t, err)
+
+		_, err = Decrement(c, "counter-b", -2)
+		must.ErrorIs(t, err, ErrNegativeInc)
+	})
+
+	t.Run("uncountable", func(t *testing.T) {
+		err := Set(c, "counter-c", "blah")
+		must.NoError(t, err)
+
+		_, err = Decrement(c, "counter-c", 1)
+		must.ErrorIs(t, err, ErrNonNumeric)
+	})
+
+	t.Run("works", func(t *testing.T) {
+		err := Set(c, "counter-d", "1000")
+		must.NoError(t, err)
+
+		v, verr := Decrement(c, "counter-d", 2)
+		must.NoError(t, verr)
+		must.Eq(t, 998, v)
+	})
+}
