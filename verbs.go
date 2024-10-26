@@ -204,16 +204,10 @@ func Add[T any](c *Client, key string, item T, opts ...Option) error {
 	})
 }
 
-func Touch(c *Client, key string) error {
-	if err := check(key); err != nil {
-		return err
-	}
-	_ = c
-
-	panic("not yet implemented")
-}
-
 // Get the value associated with the given key.
+//
+// Uses Client c to connect to a memcached instance, and automatically handles
+// connection pooling and reuse.
 func Get[T any](c *Client, key string) (T, error) {
 	var result T
 
@@ -288,6 +282,10 @@ func getPayload(r *bufio.Reader) ([]byte, error) {
 	return payload, err
 }
 
+// Delete will remove the value associated with key from memcached.
+//
+// Uses Client c to connect to a memcached instance, and automatically handles
+// connection pooling and reuse.
 func Delete(c *Client, key string) error {
 	if err := check(key); err != nil {
 		return err
@@ -324,6 +322,13 @@ func Delete(c *Client, key string) error {
 	})
 }
 
+// Increment will increment the value associated with the given key by delta.
+//
+// Note: the value must be an ASCII integer. It must have been initially stored
+// as a string value, e.g. by using Set. The delta value must be positive.
+//
+//	Set(client, "counter", "100")
+//	Increment(client, "counter", 1) // counter = 101
 func Increment[T Countable](c *Client, key string, delta T) (T, error) {
 	if err := check(key); err != nil {
 		return T(0), err
@@ -381,6 +386,13 @@ func Increment[T Countable](c *Client, key string, delta T) (T, error) {
 	return result, err
 }
 
+// Decrement will decrement the value associated with the given key by delta.
+//
+// Note: the value must be an ASCII integer. It must have been initially stored
+// as a string value, e.g. by using Set. The delta value must be positive.
+//
+//	Set(client, "counter", "100")
+//	Decrement(client, "counter", 1) // counter = 99
 func Decrement[T Countable](c *Client, key string, delta T) (T, error) {
 	if err := check(key); err != nil {
 		return T(0), err

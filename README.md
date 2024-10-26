@@ -44,6 +44,31 @@ of your Go variable.
 value, err := memc.Get[T](client, "my/key/name")
 ```
 
+##### Incrementing/Decrementing a counter in memcached.
+
+The `memc` package provides `Increment` and `Decrement` for increasing or
+decreasing a value by a given delta. Note that the value must already be stored,
+and must be in the form of an ASCII string representation of a number. The delta
+value must be positive.
+
+```go
+err := memc.Set(client, "/my/counter", "100")
+```
+
+Using `Increment` to increase the counter value by 1.
+
+```go
+v, err := memc.Increment("/my/counter", 1)
+// v is now 101
+```
+
+Using `Decrement` to decrease the value by 5.
+
+```go
+v, err := memc.Decrement("/my/counter", 5)
+// v is now 96
+```
+
 ##### Sharding memcached instances.
 
 The memcached can handle sharding writes and reads across multiple memcached
