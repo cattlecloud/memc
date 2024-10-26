@@ -9,6 +9,13 @@ import (
 	"encoding/gob"
 )
 
+// Countable represents types that work with Increment and Decrement operations.
+//
+// Note: memcached does not allow negative values for either operation.
+type Countable interface {
+	~uint8 | ~uint16 | ~uint32 | ~uint64 | ~int
+}
+
 func encode(item any) ([]byte, error) {
 	switch v := item.(type) {
 	case []byte:
