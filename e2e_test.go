@@ -18,6 +18,12 @@ import (
 	"noxide.lol/go/xtc"
 )
 
+// Examples using netcat
+//
+// echo -n -e "set key 0 300 3\r\nval\r\n" | nc localhost 11211
+//
+// echo -n -e "delete key\r\n" | nc localhost 11211
+
 const (
 	executable = "memcached"
 )
@@ -173,5 +179,36 @@ func Test_Delete(t *testing.T) {
 
 		err = Delete(c, "key1")
 		must.ErrorIs(t, err, ErrNotFound)
+	})
+}
+
+func Test_Add(t *testing.T) {
+	t.Parallel()
+
+	address, done := launchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	t.Run("success", func(t *testing.T) {
+		err := Add(c, "key1", "value1")
+		must.NoError(t, err)
+
+		v, verr := Get[string](c, "key1")
+		must.NoError(t, verr)
+		must.Eq(t, v, "value1")
+	})
+
+	t.Run("overwrite", func(t *testing.T) {
+		err := Set(c, "key2", "value2")
+		must.NoError(t, err)
+
+		err = Add(c, "key2", "value2.b")
+		must.ErrorIs(t, err, ErrNotStored)
+
+		v, verr := Get[string](c, "key2")
+		must.NoError(t, verr)
+		must.Eq(t, v, "value2")
 	})
 }

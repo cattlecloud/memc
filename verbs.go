@@ -50,7 +50,8 @@ func Flags(flags int) Option {
 	}
 }
 
-// Set the key to contain the value of item.
+// Set will store the item using the given key, possibly overwriting any
+// existing data. New items are at the top of the LRU.
 //
 // Uses Client c to connect to a memcached instance, and automatically handles
 // connection pooling and reuse.
@@ -117,25 +118,86 @@ func Set[T any](c *Client, key string, item T, opts ...Option) error {
 			return nil
 		case "NOT_STORED\r\n":
 			return ErrNotStored
-		case "EXISTS\r\n":
-			return ErrConflict
-		case "NOT_FOUND\r\n":
-			return ErrCacheMiss
 		default:
 			return fmt.Errorf("memc: unexpected response to set: %q", string(line))
 		}
 	})
 }
 
-func Add[T any](c *Client, key string, item T) error {
+// Add will store the item using the given key, but only if no item currently
+// exists. New items are at the top of the LRU.
+//
+// Uses Client c to connect to a memcached instance, and automatically handles
+// connection pooling and reuse.
+//
+// One or more Option(s) may be applied to configure things such as the
+// value expiration TTL or its associated flags.
+func Add[T any](c *Client, key string, item T, opts ...Option) error {
 	if err := check(key); err != nil {
 		return err
 	}
 
-	_ = c
-	_ = item
+	options := &Options{
+		expiration: c.expiration,
+		flags:      0,
+	}
 
-	panic("not yet implemented")
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	return c.do(key, func(conn *iopool.Buffer) error {
+		encoding, encerr := encode(item)
+		if encerr != nil {
+			return encerr
+		}
+
+		expiration, experr := seconds(options.expiration)
+		if experr != nil {
+			return experr
+		}
+
+		// write the header components
+		if _, err := fmt.Fprintf(
+			conn,
+			"add %s %d %d %d\r\n",
+			key, options.flags, expiration, len(encoding),
+		); err != nil {
+			return err
+		}
+
+		// write the payload
+		if _, err := conn.Write(encoding); err != nil {
+			return err
+		}
+
+		// write clrf
+		if _, err := io.WriteString(conn, "\r\n"); err != nil {
+			return err
+		}
+
+		// flush the buffer
+		if err := conn.Flush(); err != nil {
+			return err
+		}
+
+		// read response
+		line, lerr := conn.ReadSlice('\n')
+		if lerr != nil {
+			return lerr
+		}
+
+		switch string(line) {
+		case "STORED\r\n":
+			return nil
+		case "NOT_STORED\r\n":
+			return ErrNotStored
+		case "EXISTS\r\n":
+			return ErrConflict
+		default:
+			return fmt.Errorf("memc: unexpected response to set: %q", string(line))
+		}
+	})
 }
 
 func Touch(c *Client, key string) error {
