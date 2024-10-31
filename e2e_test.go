@@ -4,18 +4,12 @@
 package memc
 
 import (
-	"fmt"
-	"net"
-	"os/exec"
 	"testing"
 	"time"
 
 	"github.com/shoenig/ignore"
 	"github.com/shoenig/test/must"
-	"github.com/shoenig/test/portal"
-	"github.com/shoenig/test/skip"
-	"github.com/shoenig/test/wait"
-	"noxide.lol/go/xtc"
+	"noxide.lol/go/memc/memctest"
 )
 
 // Examples using netcat
@@ -24,52 +18,10 @@ import (
 //
 // echo -n -e "delete key\r\n" | nc localhost 11211
 
-const (
-	executable = "memcached"
-)
-
-type fatalTester struct{}
-
-func (ft *fatalTester) Fatalf(msg string, args ...any) {
-	s := fmt.Sprintf(msg, args...)
-	panic(s)
-}
-
-var (
-	fatal = new(fatalTester)
-	ports = portal.New(fatal)
-)
-
-func launchTCP(t *testing.T, args []string) (string, func()) {
-	// requires memcached executable on $PATH
-	skip.CommandUnavailable(t, executable)
-
-	port := ports.One()
-	address := fmt.Sprintf("localhost:%d", port)
-	args = append(args, "-l", address)
-
-	ctx, cancel := xtc.Cancelable()
-	cmd := exec.CommandContext(ctx, executable, args...)
-	err := cmd.Start()
-	must.NoError(t, err)
-
-	// wait for memcached to be listening
-	must.Wait(t, wait.InitialSuccess(
-		wait.Timeout(3*time.Second),
-		wait.Gap(200*time.Millisecond),
-		wait.ErrorFunc(func() error {
-			_, err := net.Dial("tcp", address)
-			return err
-		}),
-	))
-
-	return address, cancel
-}
-
 func TestE2E_SetGet_simple(t *testing.T) {
 	t.Parallel()
 
-	address, done := launchTCP(t, nil)
+	address, done := memctest.LaunchTCP(t, nil)
 	t.Cleanup(done)
 
 	c := New([]string{address})
@@ -131,7 +83,7 @@ func TestE2E_SetGet_simple(t *testing.T) {
 func Test_SetGet_expiration(t *testing.T) {
 	t.Parallel()
 
-	address, done := launchTCP(t, nil)
+	address, done := memctest.LaunchTCP(t, nil)
 	t.Cleanup(done)
 
 	c := New([]string{address})
@@ -146,7 +98,7 @@ func Test_SetGet_expiration(t *testing.T) {
 func Test_Get_miss(t *testing.T) {
 	t.Parallel()
 
-	address, done := launchTCP(t, nil)
+	address, done := memctest.LaunchTCP(t, nil)
 	t.Cleanup(done)
 
 	c := New([]string{address})
@@ -159,7 +111,7 @@ func Test_Get_miss(t *testing.T) {
 func Test_Delete(t *testing.T) {
 	t.Parallel()
 
-	address, done := launchTCP(t, nil)
+	address, done := memctest.LaunchTCP(t, nil)
 	t.Cleanup(done)
 
 	c := New([]string{address})
@@ -185,7 +137,7 @@ func Test_Delete(t *testing.T) {
 func Test_Add(t *testing.T) {
 	t.Parallel()
 
-	address, done := launchTCP(t, nil)
+	address, done := memctest.LaunchTCP(t, nil)
 	t.Cleanup(done)
 
 	c := New([]string{address})
@@ -216,7 +168,7 @@ func Test_Add(t *testing.T) {
 func Test_Increment(t *testing.T) {
 	t.Parallel()
 
-	address, done := launchTCP(t, nil)
+	address, done := memctest.LaunchTCP(t, nil)
 	t.Cleanup(done)
 
 	c := New([]string{address})
@@ -256,7 +208,7 @@ func Test_Increment(t *testing.T) {
 func Test_Decrement(t *testing.T) {
 	t.Parallel()
 
-	address, done := launchTCP(t, nil)
+	address, done := memctest.LaunchTCP(t, nil)
 	t.Cleanup(done)
 
 	c := New([]string{address})
