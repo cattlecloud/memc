@@ -1,9 +1,10 @@
-set shell := ["bash", "-c"]
+set shell := ["bash", "-u", "-c"]
 
-# tidy, vet, lint, and test the source tree
-default: tidy vet lint test
+[private]
+default:
+    @just --list
 
-# run tests
+# run tests over source tree
 test:
     go test -count=1 -v -race ./...
 
@@ -13,12 +14,12 @@ copywrite:
         --config .github/workflows/scripts/copywrite.hcl headers \
         --spdx "BSD-3-Clause"
 
-# lint source with golangci-lint
-lint:
+# run lint over source tree
+lint: vet
     golangci-lint run \
         --config .github/workflows/scripts/golangci.yaml
 
-# scan source with go ver
+# run vet over source tree
 vet:
     go vet ./...
 
