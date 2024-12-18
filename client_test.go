@@ -29,21 +29,44 @@ func Test_SetDefaultTTL(t *testing.T) {
 func Test_seconds(t *testing.T) {
 	t.Parallel()
 
+	c := &Client{
+		now: func() time.Time {
+			// January 23rd, 2026, 10:24:00 AM
+			return time.Date(2026, 1, 23, 10, 24, 0, 0, time.UTC)
+		},
+	}
+
 	t.Run("zero", func(t *testing.T) {
-		s, err := seconds(0)
+		s, err := c.seconds(0)
 		must.NoError(t, err)
 		must.Zero(t, s)
 	})
 
 	t.Run("millis", func(t *testing.T) {
-		_, err := seconds(250 * time.Millisecond)
+		_, err := c.seconds(250 * time.Millisecond)
 		must.ErrorIs(t, err, ErrExpiration)
 	})
 
 	t.Run("seconds", func(t *testing.T) {
-		s, err := seconds(4 * time.Second)
+		s, err := c.seconds(4 * time.Second)
 		must.NoError(t, err)
 		must.Eq(t, 4, s)
+	})
+
+	t.Run("month", func(t *testing.T) {
+		ttl := 30 * 24 * time.Hour
+		fix := ttl - (1 * time.Second)
+		s, err := c.seconds(fix)
+		must.NoError(t, err)
+		must.Eq(t, 2591999, s)
+	})
+
+	t.Run("longer", func(t *testing.T) {
+		ttl := 30 * 24 * time.Hour
+		fix := ttl + (1 * time.Second)
+		s, err := c.seconds(fix)
+		must.NoError(t, err)
+		must.Eq(t, 1771755841, s) // February 22, 2026 10:24:01 AM
 	})
 }
 

@@ -82,7 +82,7 @@ func Set[T any](c *Client, key string, item T, opts ...Option) error {
 			return encerr
 		}
 
-		expiration, experr := seconds(options.expiration)
+		expiration, experr := c.seconds(options.expiration)
 		if experr != nil {
 			return experr
 		}
@@ -156,7 +156,7 @@ func Add[T any](c *Client, key string, item T, opts ...Option) error {
 			return encerr
 		}
 
-		expiration, experr := seconds(options.expiration)
+		expiration, experr := c.seconds(options.expiration)
 		if experr != nil {
 			return experr
 		}
