@@ -25,6 +25,7 @@ jobs:
       matrix:
         os:
           - ubuntu-24.04
+          - macos-15
     runs-on: ${{matrix.os}}
     steps:
       - uses: actions/checkout@v4
@@ -33,9 +34,19 @@ jobs:
           go-version-file: go.mod
       - uses: extractions/setup-just@v2
       - name: Install memcached
-        run:
-          sudo apt-get update && sudo apt-get install -y memcached
+        run: |
+          os=$(uname)
+          case $os in
+            Linux)
+              sudo apt-get update && sudo apt-get install -y memcached
+              ;;
+            Darwin)
+              brew install memcached
+              ;;
+            *)
+              exit 3
+              ;;
+          esac
       - name: Run Go Test
         run: |
           just init tidy lint test
-
