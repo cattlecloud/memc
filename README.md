@@ -12,7 +12,11 @@ October 2024:
 The `memc` package can be added to a Go project with `go get`.
 
 ```shell
-go get noxide.lol/go/memc@latest
+go get cattlecloud.net/go/memc@latest
+```
+
+```go
+import "cattlecloud.net/go/memc"
 ```
 
 ### Examples
@@ -123,4 +127,4 @@ _ = memc.Close()
 
 ### License
 
-The `noxide.lol/go/memc` module is open source under the [BSD-3-Clause](LICENSE) license.
+The `cattlecloud.net/go/memc` module is open source under the [BSD-3-Clause](LICENSE) license.

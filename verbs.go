@@ -1,4 +1,4 @@
-// Copyright (c) The Noxide Project Authors
+// Copyright (c) CattleCloud LLC
 // SPDX-License-Identifier: BSD-3-Clause
 
 package memc
@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"noxide.lol/go/memc/iopool"
+	"cattlecloud.net/go/memc/iopool"
 )
 
 var (
