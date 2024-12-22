@@ -1,10 +1,10 @@
+cattlecloud.net/go/scope v1.2.0 h1:9M1BRfmjRIwJAxCbkiLiXesrk97UlNconeAamt1q9Mo=
+cattlecloud.net/go/scope v1.2.0/go.mod h1:YGE0XO+qTS84e0nxPDA97WmiMxnjknMQ7WOUWYNzy9Y=
+cattlecloud.net/go/stacks v1.1.2 h1:sr4bYJBh1Y14js/ZSA8F0dRJO+Bf3SLGvkgIBngDu1I=
+cattlecloud.net/go/stacks v1.1.2/go.mod h1:FvyB+rT9qnhvNz9ZmP7xuueS130Q85TXJdd+xqVbSK8=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/shoenig/ignore v0.4.0 h1:qPOWs0slbPMtenC0H3cKvu5Kn3hQFTE3yK6YJvyNDlA=
 github.com/shoenig/ignore v0.4.0/go.mod h1:VF91FoiYAwXq4KinOq6zP5xfFw/Ib6MfftaGKYTpmwo=
-github.com/shoenig/test v1.11.0 h1:NoPa5GIoBwuqzIviCrnUJa+t5Xb4xi5Z+zODJnIDsEQ=
-github.com/shoenig/test v1.11.0/go.mod h1:UxJ6u/x2v/TNs/LoLxBNJRV9DiwBBKYxXSyczsBHFoI=
-noxide.lol/go/stacks v1.0.0 h1:g4MPkizQF/6B3u1ejGxWDIjL1zM/MSHMzoS1DEZTOWY=
-noxide.lol/go/stacks v1.0.0/go.mod h1:rwC8UA5l8uwwfRNAKuBSI+7hpP8ilJVK3gozAn7vjzM=
-noxide.lol/go/xtc v0.2.0 h1:KxgaQ28Moc4T0O22wuj3698rhB0srAWoTpAhtgp4DXA=
-noxide.lol/go/xtc v0.2.0/go.mod h1:WaIsAXK/e1jY8EP00bXYoUAxGS4Jevbwc2JnKeyt5F8=
+github.com/shoenig/test v1.12.0 h1:5gu0WaxkayLUad6B/VCnBWMi5VR7oVYCw/d34SU1ed0=
+github.com/shoenig/test v1.12.0/go.mod h1:UxJ6u/x2v/TNs/LoLxBNJRV9DiwBBKYxXSyczsBHFoI=

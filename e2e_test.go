@@ -1,4 +1,4 @@
-// Copyright (c) The Noxide Project Authors
+// Copyright (c) CattleCloud LLC
 // SPDX-License-Identifier: BSD-3-Clause
 
 package memc
@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"cattlecloud.net/go/memc/memctest"
 	"github.com/shoenig/ignore"
 	"github.com/shoenig/test/must"
-	"noxide.lol/go/memc/memctest"
 )
 
 // Examples using netcat

@@ -1,4 +1,4 @@
-// Copyright (c) The Noxide Project Authors
+// Copyright (c) CattleCloud LLC
 // SPDX-License-Identifier: BSD-3-Clause
 
 package memctest
@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
+	"cattlecloud.net/go/scope"
 	"github.com/shoenig/test/must"
 	"github.com/shoenig/test/portal"
 	"github.com/shoenig/test/skip"
 	"github.com/shoenig/test/wait"
-	"noxide.lol/go/xtc"
 )
 
 const (
@@ -41,7 +41,7 @@ func LaunchTCP(t *testing.T, args []string) (string, func()) {
 	address := fmt.Sprintf("localhost:%d", port)
 	args = append(args, "-l", address)
 
-	ctx, cancel := xtc.Cancelable()
+	ctx, cancel := scope.Cancelable()
 	cmd := exec.CommandContext(ctx, executable, args...)
 	err := cmd.Start()
 	must.NoError(t, err)

@@ -1,4 +1,4 @@
-// Copyright (c) The Noxide Project Authors
+// Copyright (c) CattleCloud LLC
 // SPDX-License-Identifier: BSD-3-Clause
 
 package memc
@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"noxide.lol/go/memc/iopool"
+	"cattlecloud.net/go/memc/iopool"
 )
 
 // A Client is used for making network requests to memcached instances.

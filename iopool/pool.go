@@ -1,4 +1,4 @@
-// Copyright (c) The Noxide Project Authors
+// Copyright (c) CattleCloud LLC
 // SPDX-License-Identifier: BSD-3-Clause
 
 package iopool
@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"noxide.lol/go/stacks"
+	"cattlecloud.net/go/stacks"
 )
 
 var (
