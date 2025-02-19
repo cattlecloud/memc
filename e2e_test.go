@@ -244,3 +244,106 @@ func Test_Decrement(t *testing.T) {
 		must.Eq(t, 998, v)
 	})
 }
+
+func TestE2E_SetMulti(t *testing.T) {
+	t.Parallel()
+
+	address, done := memctest.LaunchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	err := SetMulti(c, []*Pair[string, int]{
+		{"one", 1},
+		{"two", 2},
+		{"three", 3},
+	})
+	must.NoError(t, err)
+
+	one, err1 := Get[int](c, "one")
+	must.NoError(t, err1)
+	must.Eq(t, 1, one)
+
+	two, err2 := Get[int](c, "two")
+	must.NoError(t, err2)
+	must.Eq(t, 2, two)
+
+	three, err3 := Get[int](c, "three")
+	must.NoError(t, err3)
+	must.Eq(t, 3, three)
+}
+
+func TestE2E_AddMulti(t *testing.T) {
+	t.Parallel()
+
+	address, done := memctest.LaunchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	err := AddMulti(c, []*Pair[string, int]{
+		{"one", 1},
+		{"two", 2},
+		{"three", 3},
+	})
+	must.NoError(t, err)
+
+	one, err1 := Get[int](c, "one")
+	must.NoError(t, err1)
+	must.Eq(t, 1, one)
+
+	two, err2 := Get[int](c, "two")
+	must.NoError(t, err2)
+	must.Eq(t, 2, two)
+
+	three, err3 := Get[int](c, "three")
+	must.NoError(t, err3)
+	must.Eq(t, 3, three)
+}
+
+func TestE2E_GetMulti(t *testing.T) {
+	t.Parallel()
+
+	address, done := memctest.LaunchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	err := SetMulti(c, []*Pair[string, int]{
+		{"one", 1},
+		{"two", 2},
+		{"three", 3},
+	})
+	must.NoError(t, err)
+
+	results := GetMulti[int](c, []string{"one", "two", "three"})
+	must.Eq(t, []*Pair[int, error]{
+		{A: 1, B: nil},
+		{A: 2, B: nil},
+		{A: 3, B: nil},
+	}, results)
+}
+
+func TestE2E_GetMulti_missing(t *testing.T) {
+	t.Parallel()
+
+	address, done := memctest.LaunchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	err := SetMulti(c, []*Pair[string, int]{
+		{"one", 1},
+		{"three", 3},
+	})
+	must.NoError(t, err)
+
+	results := GetMulti[int](c, []string{"one", "two", "three"})
+	must.Eq(t, &Pair[int, error]{A: 1, B: nil}, results[0])
+	must.Eq(t, &Pair[int, error]{A: 3, B: nil}, results[2])
+	must.ErrorIs(t, ErrCacheMiss, results[1].B)
+}

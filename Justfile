@@ -15,7 +15,7 @@ tidy:
 
 # run tests across source tree
 [group('build')]
-test:
+tests:
     go test -v -race -count=1 ./...
 
 # ensure copywrite headers present on source files
