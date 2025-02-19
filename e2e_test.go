@@ -80,7 +80,7 @@ func TestE2E_SetGet_simple(t *testing.T) {
 	})
 }
 
-func Test_SetGet_expiration(t *testing.T) {
+func TestE2E_SetGet_expiration(t *testing.T) {
 	t.Parallel()
 
 	address, done := memctest.LaunchTCP(t, nil)
@@ -95,7 +95,7 @@ func Test_SetGet_expiration(t *testing.T) {
 	})
 }
 
-func Test_Get_miss(t *testing.T) {
+func TestE2E_Get_miss(t *testing.T) {
 	t.Parallel()
 
 	address, done := memctest.LaunchTCP(t, nil)
@@ -108,7 +108,7 @@ func Test_Get_miss(t *testing.T) {
 	must.ErrorIs(t, err, ErrCacheMiss)
 }
 
-func Test_Delete(t *testing.T) {
+func TestE2E_Delete(t *testing.T) {
 	t.Parallel()
 
 	address, done := memctest.LaunchTCP(t, nil)
@@ -134,7 +134,7 @@ func Test_Delete(t *testing.T) {
 	})
 }
 
-func Test_Add(t *testing.T) {
+func TestE2E_Add(t *testing.T) {
 	t.Parallel()
 
 	address, done := memctest.LaunchTCP(t, nil)
@@ -165,7 +165,7 @@ func Test_Add(t *testing.T) {
 	})
 }
 
-func Test_Increment(t *testing.T) {
+func TestE2E_Increment(t *testing.T) {
 	t.Parallel()
 
 	address, done := memctest.LaunchTCP(t, nil)
@@ -205,7 +205,7 @@ func Test_Increment(t *testing.T) {
 	})
 }
 
-func Test_Decrement(t *testing.T) {
+func TestE2E_Decrement(t *testing.T) {
 	t.Parallel()
 
 	address, done := memctest.LaunchTCP(t, nil)
