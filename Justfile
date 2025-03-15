@@ -14,9 +14,15 @@ tidy:
     go mod tidy
 
 # run tests across source tree
-[group('build')]
+[group('testing')]
 tests:
     go test -v -race -count=1 ./...
+
+# run specific unit test
+[group('testing')]
+[no-cd]
+test unit:
+    go test -v -count=1 -race -run {{unit}} 2>/dev/null
 
 # ensure copywrite headers present on source files
 [group('lint')]
@@ -44,4 +50,5 @@ lint: vet
 [group('build')]
 init:
     go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2
+
 

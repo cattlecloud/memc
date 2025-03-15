@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -149,7 +150,12 @@ func (p *pool) get() (*Buffer, error) {
 
 func open(address string) (Connection, error) {
 	const timeout = 3 * time.Second
-	return net.DialTimeout("tcp", address, timeout)
+	switch strings.HasPrefix(address, "/") {
+	case true:
+		return net.DialTimeout("unix", address, timeout)
+	default:
+		return net.DialTimeout("tcp", address, timeout)
+	}
 }
 
 func (p *pool) free(conn *Buffer) {
