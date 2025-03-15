@@ -21,13 +21,27 @@ import "cattlecloud.net/go/memc"
 
 ### Examples
 
-##### Setting a value in memcached.
+##### Connecting to memcached.
+
+Supports connecting via TCP or Unix Domain Socket.
 
 ```go
 client := memc.New(
   []string{"localhost:11211"},
 )
+```
 
+For sockets, simply specify the socket filepath.
+
+```go
+client := memc.New(
+  []string{"/var/lib/app/cache.socket"},
+)
+```
+
+##### Setting a value in memcached.
+
+```go
 err := memc.Set(client, "my/key/name", "some_value")
 ```
 
