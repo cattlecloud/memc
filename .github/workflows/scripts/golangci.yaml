@@ -35,8 +35,8 @@ linters:
    - staticcheck
    - sqlclosecheck
    - tagalign
-   - tenv
    - unused
+   - usetesting
    - whitespace
 
 linters-settings:
