@@ -2,7 +2,7 @@ set shell := ["bash", "-u", "-c"]
 
 export scripts := ".github/workflows/scripts"
 export GOBIN := `echo $PWD/.bin`
-export GOTOOLCHAIN := 'go1.24.1'
+export GOTOOLCHAIN := 'go1.24.5'
 
 # show available commands
 [private]
@@ -50,5 +50,5 @@ lint: vet
 # locally install build dependencies
 [group('build')]
 init:
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.64.7
+    go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.3.0
 
