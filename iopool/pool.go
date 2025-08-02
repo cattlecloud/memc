@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"cattlecloud.net/go/scope"
 	"cattlecloud.net/go/stacks"
 )
 
@@ -149,12 +150,16 @@ func (p *pool) get() (*Buffer, error) {
 }
 
 func open(address string) (Connection, error) {
-	const timeout = 3 * time.Second
+	dialer := &net.Dialer{Timeout: 3 * time.Second}
+
+	ctx, cancel := scope.TTL(3 * time.Second)
+	defer cancel()
+
 	switch strings.HasPrefix(address, "/") {
 	case true:
-		return net.DialTimeout("unix", address, timeout)
+		return dialer.DialContext(ctx, "unix", address)
 	default:
-		return net.DialTimeout("tcp", address, timeout)
+		return dialer.DialContext(ctx, "tcp", address)
 	}
 }
 

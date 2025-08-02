@@ -34,12 +34,13 @@ var (
 	ports = portal.New(fatal)
 )
 
-func waitUntilReady(t *testing.T, mode, address string) {
+func waitUntilReady(t *testing.T, ctx scope.C, mode, address string) {
 	must.Wait(t, wait.InitialSuccess(
 		wait.Timeout(3*time.Second),
 		wait.Gap(200*time.Millisecond),
 		wait.ErrorFunc(func() error {
-			_, err := net.Dial(mode, address)
+			dialer := &net.Dialer{Timeout: 1 * time.Second}
+			_, err := dialer.DialContext(ctx, mode, address)
 			return err
 		}),
 	))
@@ -61,7 +62,7 @@ func LaunchTCP(t *testing.T, args []string) (string, func()) {
 	must.NoError(t, err)
 
 	// wait for memcached to be listening
-	waitUntilReady(t, "tcp", address)
+	waitUntilReady(t, ctx, "tcp", address)
 
 	// good to go!
 	return address, cancel
@@ -86,7 +87,7 @@ func LaunchUDS(t *testing.T, args []string) (string, func()) {
 	}))
 
 	// wait for memcached to be listening
-	waitUntilReady(t, "unix", socket)
+	waitUntilReady(t, ctx, "unix", socket)
 
 	// good to go!
 	return socket, cancel
