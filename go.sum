@@ -1,5 +1,5 @@
-cattlecloud.net/go/scope v1.2.0 h1:9M1BRfmjRIwJAxCbkiLiXesrk97UlNconeAamt1q9Mo=
-cattlecloud.net/go/scope v1.2.0/go.mod h1:YGE0XO+qTS84e0nxPDA97WmiMxnjknMQ7WOUWYNzy9Y=
+cattlecloud.net/go/scope v1.2.1 h1:kCiA2lE6/qdMXL56rT3ZjkjFH63rwJMq1fCarE2x1F0=
+cattlecloud.net/go/scope v1.2.1/go.mod h1:YGE0XO+qTS84e0nxPDA97WmiMxnjknMQ7WOUWYNzy9Y=
 cattlecloud.net/go/stacks v1.1.2 h1:sr4bYJBh1Y14js/ZSA8F0dRJO+Bf3SLGvkgIBngDu1I=
 cattlecloud.net/go/stacks v1.1.2/go.mod h1:FvyB+rT9qnhvNz9ZmP7xuueS130Q85TXJdd+xqVbSK8=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
