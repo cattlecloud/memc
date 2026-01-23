@@ -19,6 +19,7 @@ type Client struct {
 	timeout    time.Duration
 	expiration time.Duration
 	idle       int
+	now        func() time.Time
 
 	lock  sync.Mutex
 	addrs []string
@@ -83,6 +84,24 @@ func SetDefaultTTL(expiration time.Duration) ClientOption {
 	}
 }
 
+// ClockFunc is a function that returns the current time.
+//
+// Normally this should just be the time.Now function.
+type ClockFunc func() time.Time
+
+// SetClock sets the ClockFunc used for getting the current time.
+//
+// If unset the default is to use the time.Now function.
+//
+// Note this should typically only be set in testing.
+func SetClock(f ClockFunc) ClientOption {
+	return func(c *Client) {
+		c.lock.Lock()
+		defer c.lock.Unlock()
+		c.now = f
+	}
+}
+
 const (
 	defaultDialTimeout = 5 * time.Second
 	defaultExpiration  = 1 * time.Hour
@@ -100,6 +119,7 @@ func New(instances []string, opts ...ClientOption) *Client {
 	c.timeout = defaultDialTimeout
 	c.expiration = defaultExpiration
 	c.idle = defaultIdleCount
+	c.now = time.Now
 
 	for _, opt := range opts {
 		opt(c)
@@ -129,17 +149,24 @@ func (c *Client) Close() error {
 	return c.pools.Close()
 }
 
-func seconds(expiration time.Duration) (int, error) {
-	if expiration == 0 {
+// seconds returns the number of seconds until expiration, unless the
+// expiration is more than 30 days (2_592_000 seconds), in which case the
+// absolute timestamp is used and expected by the memcached instance
+func (c *Client) seconds(expiration time.Duration) (int, error) {
+	switch {
+	case expiration == 0:
 		return 0, nil
-	}
-
-	if expiration < 1*time.Second {
+	case expiration < 1*time.Second:
 		return 0, ErrExpiration
+	case expiration > 2_592_000*time.Second:
+		unix := c.now()
+		later := unix.Add(expiration)
+		s := int(later.Unix())
+		return s, nil
+	default:
+		s := int(expiration.Seconds())
+		return s, nil
 	}
-
-	s := int(expiration.Seconds())
-	return s, nil
 }
 
 func (c *Client) do(key string, f func(*iopool.Buffer) error) error {
