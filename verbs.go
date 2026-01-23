@@ -450,6 +450,33 @@ func Decrement[T Countable](c *Client, key string, delta T) (T, error) {
 	return result, err
 }
 
+func Stats(c *Client) (*Statistics, error) {
+	var statistics *Statistics
+
+	err := c.do("", func(conn *iopool.Buffer) error {
+		// write the header component
+		if _, err := fmt.Fprintf(conn, "stats\r\n"); err != nil {
+			return err
+		}
+
+		// flush the connection, forcing bytes over the wire
+		if err := conn.Flush(); err != nil {
+			return err
+		}
+
+		// extract the statistics payload
+		payload, perr := stats(conn.Reader)
+		if perr != nil {
+			return perr
+		}
+		statistics = payload
+
+		return nil
+	})
+
+	return statistics, err
+}
+
 func unexpected(response []byte) error {
 	return fmt.Errorf(
 		"unexpected response from memcached %q",

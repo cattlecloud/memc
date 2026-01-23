@@ -353,3 +353,28 @@ func TestE2E_GetMulti_missing(t *testing.T) {
 	must.Eq(t, &Pair[int, error]{A: 3, B: nil}, results[2])
 	must.ErrorIs(t, ErrCacheMiss, results[1].B)
 }
+
+func TestE2E_Stats(t *testing.T) {
+	t.Parallel()
+
+	address, done := memctest.LaunchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	// insert an item
+	err := Set(c, "mykey", "myvalue", TTL(1*time.Hour))
+	must.NoError(t, err)
+
+	s, serr := Stats(c)
+	must.NoError(t, serr)
+
+	// spot check a few fields
+	must.StrHasPrefix(t, "1.", s.Runtime.Version)
+	must.Positive(t, s.Runtime.Threads)
+	must.Positive(t, s.Connections.Max)
+	must.Positive(t, s.Connections.Current)
+	must.One(t, s.Items.Current)
+	must.Eq(t, 71, s.Items.Bytes)
+}
