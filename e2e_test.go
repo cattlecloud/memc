@@ -93,6 +93,12 @@ func TestE2E_SetGet_expiration(t *testing.T) {
 		err := Set(c, "mykey", "myvalue", TTL(1*time.Hour))
 		must.NoError(t, err)
 	})
+
+	t.Run("months", func(t *testing.T) {
+		ttl := 90 * 24 * time.Hour // 3 months
+		err := Set(c, "mykey", "myvalue", TTL(ttl))
+		must.NoError(t, err)
+	})
 }
 
 func TestE2E_Get_miss(t *testing.T) {
