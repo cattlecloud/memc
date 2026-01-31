@@ -28,7 +28,7 @@ test unit:
 # ensure copywrite headers present on source files
 [group('lint')]
 copywrite:
-    copywrite \
+    $GOBIN/copywrite \
         --config {{scripts}}/copywrite.hcl headers \
         --spdx "BSD-3-Clause"
 
@@ -51,4 +51,5 @@ lint: vet
 [group('build')]
 init:
     go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.8.0
+    go install github.com/hashicorp/copywrite@v0.24.0
 
