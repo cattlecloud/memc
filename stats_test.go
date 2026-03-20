@@ -22,6 +22,22 @@ func Test_stats(t *testing.T) {
 	must.Eq(t, 1024, result.Connections.Max)
 }
 
+func Test_stats_slabs(t *testing.T) {
+	t.Parallel()
+
+	input := strings.NewReader(realSlabsStats)
+	result, err := slabs(input)
+	must.NoError(t, err)
+	must.Eq(t, 5, result.ActiveSlabs)
+	must.Eq(t, 5242880, result.TotalMalloced)
+	must.SliceLen(t, 5, result.Slabs)
+	must.Eq(t, 600, result.Slabs[0].ChunkSize)
+	must.Eq(t, 1747, result.Slabs[0].TotalChunks)
+	must.Eq(t, 1856, result.Slabs[4].ChunkSize)
+	must.Eq(t, 564, result.Slabs[4].TotalChunks)
+}
+
+// echo "stats" | nc -U /tmp/mc.sock
 const realStats = `
 STAT pid 714
 STAT uptime 2077665
@@ -115,5 +131,87 @@ STAT moves_to_warm 1368
 STAT moves_within_lru 146
 STAT direct_reclaims 0
 STAT lru_bumps_dropped 0
+END
+`
+
+// echo "stats slabs" | nc -U /tmp/mc.sock
+const realSlabsStats = `
+STAT 9:chunk_size 600
+STAT 9:chunks_per_page 1747
+STAT 9:total_pages 1
+STAT 9:total_chunks 1747
+STAT 9:used_chunks 6
+STAT 9:free_chunks 1741
+STAT 9:free_chunks_end 0
+STAT 9:get_hits 2
+STAT 9:cmd_set 10
+STAT 9:delete_hits 0
+STAT 9:incr_hits 0
+STAT 9:decr_hits 0
+STAT 9:cas_hits 0
+STAT 9:cas_badval 0
+STAT 9:touch_hits 0
+STAT 11:chunk_size 944
+STAT 11:chunks_per_page 1110
+STAT 11:total_pages 1
+STAT 11:total_chunks 1110
+STAT 11:used_chunks 1
+STAT 11:free_chunks 1109
+STAT 11:free_chunks_end 0
+STAT 11:get_hits 0
+STAT 11:cmd_set 1
+STAT 11:delete_hits 0
+STAT 11:incr_hits 0
+STAT 11:decr_hits 0
+STAT 11:cas_hits 0
+STAT 11:cas_badval 0
+STAT 11:touch_hits 0
+STAT 12:chunk_size 1184
+STAT 12:chunks_per_page 885
+STAT 12:total_pages 1
+STAT 12:total_chunks 885
+STAT 12:used_chunks 29
+STAT 12:free_chunks 856
+STAT 12:free_chunks_end 0
+STAT 12:get_hits 0
+STAT 12:cmd_set 29
+STAT 12:delete_hits 0
+STAT 12:incr_hits 0
+STAT 12:decr_hits 0
+STAT 12:cas_hits 0
+STAT 12:cas_badval 0
+STAT 12:touch_hits 0
+STAT 13:chunk_size 1480
+STAT 13:chunks_per_page 708
+STAT 13:total_pages 1
+STAT 13:total_chunks 708
+STAT 13:used_chunks 86
+STAT 13:free_chunks 622
+STAT 13:free_chunks_end 0
+STAT 13:get_hits 0
+STAT 13:cmd_set 86
+STAT 13:delete_hits 0
+STAT 13:incr_hits 0
+STAT 13:decr_hits 0
+STAT 13:cas_hits 0
+STAT 13:cas_badval 0
+STAT 13:touch_hits 0
+STAT 14:chunk_size 1856
+STAT 14:chunks_per_page 564
+STAT 14:total_pages 1
+STAT 14:total_chunks 564
+STAT 14:used_chunks 40
+STAT 14:free_chunks 524
+STAT 14:free_chunks_end 0
+STAT 14:get_hits 0
+STAT 14:cmd_set 40
+STAT 14:delete_hits 0
+STAT 14:incr_hits 0
+STAT 14:decr_hits 0
+STAT 14:cas_hits 0
+STAT 14:cas_badval 0
+STAT 14:touch_hits 0
+STAT active_slabs 5
+STAT total_malloced 5242880
 END
 `

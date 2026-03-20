@@ -5,7 +5,10 @@ package memc
 
 import (
 	"bufio"
+	"cmp"
 	"io"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -166,4 +169,126 @@ func toInt(s string) int {
 func toFloat64(s string) float64 {
 	v, _ := strconv.ParseFloat(s, 64)
 	return v
+}
+
+type SlabStatistics struct {
+	ActiveSlabs   int     `json:"active_slabs"`
+	TotalMalloced int     `json:"total_malloced"`
+	Slabs         []*Slab `json:"slabs"`
+}
+
+type Slab struct {
+	Class         int `json:"slab_class"`
+	ChunkSize     int `json:"chunk_size"`
+	ChunksPerPage int `json:"chunks_per_page"`
+	TotalPages    int `json:"total_pages"`
+	TotalChunks   int `json:"total_chunks"`
+	UsedChunks    int `json:"used_chunks"`
+	FreeChunks    int `json:"free_chunks"`
+	FreeChunksEnd int `json:"free_chunks_end"`
+	GetHits       int `json:"get_hits"`
+	CmdSet        int `json:"cmd_set"`
+	DeleteHits    int `json:"delete_hits"`
+	IncrementHits int `json:"incr_hits"`
+	DecrementHits int `json:"decr_hits"`
+	CASHits       int `json:"cas_hits"`
+	CASBadVal     int `json:"cas_badval"`
+	TouchHits     int `json:"touch_hits"`
+}
+
+var (
+	statsSlabRe = regexp.MustCompile(`STAT (\d+):(\S+)\s+(\d+)`)
+)
+
+func slabs(r io.Reader) (*SlabStatistics, error) {
+	scanner := bufio.NewScanner(r)
+
+	stats := &SlabStatistics{
+		Slabs: make([]*Slab, 0, 4),
+	}
+
+	m := make(map[int]*Slab)
+
+SCAN:
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		switch {
+		case line == "END":
+			break SCAN
+
+		case strings.HasPrefix(line, "STAT active_slabs"):
+			fields := strings.Fields(line)
+			active := toInt(fields[2])
+			stats.ActiveSlabs = active
+
+		case strings.HasPrefix(line, "STAT total_malloced"):
+			fields := strings.Fields(line)
+			malloced := toInt(fields[2])
+			stats.TotalMalloced = malloced
+
+		default:
+			fields := statsSlabRe.FindStringSubmatch(line)
+			if len(fields) != 4 {
+				continue
+			}
+			slabclass := toInt(fields[1])
+			name := fields[2]
+			value := toInt(fields[3])
+
+			if _, exists := m[slabclass]; !exists {
+				m[slabclass] = &Slab{Class: slabclass}
+			}
+			slab := m[slabclass]
+
+			switch name {
+			case "chunk_size":
+				slab.ChunkSize = value
+			case "chunks_per_page":
+				slab.ChunksPerPage = value
+			case "total_pages":
+				slab.TotalPages = value
+			case "total_chunks":
+				slab.TotalChunks = value
+			case "used_chunks":
+				slab.UsedChunks = value
+			case "free_chunks":
+				slab.FreeChunks = value
+			case "free_chunks_end":
+				slab.FreeChunksEnd = value
+			case "get_hits":
+				slab.GetHits = value
+			case "cmd_set":
+				slab.CmdSet = value
+			case "delete_hits":
+				slab.DeleteHits = value
+			case "incr_hits":
+				slab.IncrementHits = value
+			case "decr_hits":
+				slab.DecrementHits = value
+			case "cas_hits":
+				slab.CASHits = value
+			case "cas_badval":
+				slab.CASBadVal = value
+			case "touch_hits":
+				slab.TouchHits = value
+			}
+		}
+	}
+
+	// ensure the scan was a success
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	for _, v := range m {
+		stats.Slabs = append(stats.Slabs, v)
+	}
+
+	// order the slab classes ascending
+	slices.SortFunc(stats.Slabs, func(a, b *Slab) int {
+		return cmp.Compare(a.Class, b.Class)
+	})
+
+	return stats, nil
 }

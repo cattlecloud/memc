@@ -477,6 +477,33 @@ func Stats(c *Client) (*Statistics, error) {
 	return statistics, err
 }
 
+func StatsSlabs(c *Client) (*SlabStatistics, error) {
+	var statistics *SlabStatistics
+
+	err := c.do("", func(conn *iopool.Buffer) error {
+		// write the header component
+		if _, err := fmt.Fprintf(conn, "stats slabs\r\n"); err != nil {
+			return err
+		}
+
+		// flush the connection, forcing bytes over the wire
+		if err := conn.Flush(); err != nil {
+			return err
+		}
+
+		// extract the slab stats payload
+		payload, perr := slabs(conn.Reader)
+		if perr != nil {
+			return perr
+		}
+		statistics = payload
+
+		return nil
+	})
+
+	return statistics, err
+}
+
 func unexpected(response []byte) error {
 	return fmt.Errorf(
 		"unexpected response from memcached %q",
