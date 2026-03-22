@@ -37,6 +37,18 @@ func Test_stats_slabs(t *testing.T) {
 	must.Eq(t, 564, result.Slabs[4].TotalChunks)
 }
 
+func Test_stats_items(t *testing.T) {
+	t.Parallel()
+
+	input := strings.NewReader(realStatsItems)
+	result, err := items(input)
+	must.NoError(t, err)
+	must.SliceLen(t, 4, result)
+	must.Eq(t, 9, result[0].Class)
+	must.Eq(t, 6, result[0].Number)
+	must.Eq(t, 3356, result[0].MemRequested)
+}
+
 // echo "stats" | nc -U /tmp/mc.sock
 const realStats = `
 STAT pid 714
@@ -213,5 +225,122 @@ STAT 14:cas_badval 0
 STAT 14:touch_hits 0
 STAT active_slabs 5
 STAT total_malloced 5242880
+END
+`
+
+// echo "stats items" | nc fossil.lan 11211
+const realStatsItems = `
+STAT items:9:number 6
+STAT items:9:number_hot 0
+STAT items:9:number_warm 0
+STAT items:9:number_cold 6
+STAT items:9:age_hot 0
+STAT items:9:age_warm 0
+STAT items:9:age 9
+STAT items:9:mem_requested 3356
+STAT items:9:evicted 0
+STAT items:9:evicted_nonzero 0
+STAT items:9:evicted_time 0
+STAT items:9:outofmemory 0
+STAT items:9:tailrepairs 0
+STAT items:9:reclaimed 0
+STAT items:9:expired_unfetched 0
+STAT items:9:evicted_unfetched 0
+STAT items:9:evicted_active 0
+STAT items:9:crawler_reclaimed 0
+STAT items:9:crawler_items_checked 0
+STAT items:9:lrutail_reflocked 0
+STAT items:9:moves_to_cold 6
+STAT items:9:moves_to_warm 0
+STAT items:9:moves_within_lru 0
+STAT items:9:direct_reclaims 0
+STAT items:9:hits_to_hot 2
+STAT items:9:hits_to_warm 0
+STAT items:9:hits_to_cold 0
+STAT items:9:hits_to_temp 0
+STAT items:12:number 1
+STAT items:12:number_hot 0
+STAT items:12:number_warm 0
+STAT items:12:number_cold 1
+STAT items:12:age_hot 0
+STAT items:12:age_warm 0
+STAT items:12:age 6
+STAT items:12:mem_requested 1143
+STAT items:12:evicted 0
+STAT items:12:evicted_nonzero 0
+STAT items:12:evicted_time 0
+STAT items:12:outofmemory 0
+STAT items:12:tailrepairs 0
+STAT items:12:reclaimed 0
+STAT items:12:expired_unfetched 0
+STAT items:12:evicted_unfetched 0
+STAT items:12:evicted_active 0
+STAT items:12:crawler_reclaimed 0
+STAT items:12:crawler_items_checked 0
+STAT items:12:lrutail_reflocked 0
+STAT items:12:moves_to_cold 1
+STAT items:12:moves_to_warm 0
+STAT items:12:moves_within_lru 0
+STAT items:12:direct_reclaims 0
+STAT items:12:hits_to_hot 0
+STAT items:12:hits_to_warm 0
+STAT items:12:hits_to_cold 0
+STAT items:12:hits_to_temp 0
+STAT items:13:number 3
+STAT items:13:number_hot 0
+STAT items:13:number_warm 0
+STAT items:13:number_cold 3
+STAT items:13:age_hot 0
+STAT items:13:age_warm 0
+STAT items:13:age 10
+STAT items:13:mem_requested 4224
+STAT items:13:evicted 0
+STAT items:13:evicted_nonzero 0
+STAT items:13:evicted_time 0
+STAT items:13:outofmemory 0
+STAT items:13:tailrepairs 0
+STAT items:13:reclaimed 0
+STAT items:13:expired_unfetched 0
+STAT items:13:evicted_unfetched 0
+STAT items:13:evicted_active 0
+STAT items:13:crawler_reclaimed 0
+STAT items:13:crawler_items_checked 0
+STAT items:13:lrutail_reflocked 0
+STAT items:13:moves_to_cold 3
+STAT items:13:moves_to_warm 0
+STAT items:13:moves_within_lru 0
+STAT items:13:direct_reclaims 0
+STAT items:13:hits_to_hot 0
+STAT items:13:hits_to_warm 0
+STAT items:13:hits_to_cold 0
+STAT items:13:hits_to_temp 0
+STAT items:14:number 5
+STAT items:14:number_hot 0
+STAT items:14:number_warm 0
+STAT items:14:number_cold 5
+STAT items:14:age_hot 0
+STAT items:14:age_warm 0
+STAT items:14:age 9
+STAT items:14:mem_requested 7673
+STAT items:14:evicted 0
+STAT items:14:evicted_nonzero 0
+STAT items:14:evicted_time 0
+STAT items:14:outofmemory 0
+STAT items:14:tailrepairs 0
+STAT items:14:reclaimed 0
+STAT items:14:expired_unfetched 0
+STAT items:14:evicted_unfetched 0
+STAT items:14:evicted_active 0
+STAT items:14:crawler_reclaimed 0
+STAT items:14:crawler_items_checked 0
+STAT items:14:lrutail_reflocked 0
+STAT items:14:moves_to_cold 5
+STAT items:14:moves_to_warm 0
+STAT items:14:moves_within_lru 0
+STAT items:14:direct_reclaims 0
+STAT items:14:hits_to_hot 0
+STAT items:14:hits_to_warm 0
+STAT items:14:hits_to_cold 0
+STAT items:14:hits_to_temp 0
 END
 `

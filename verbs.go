@@ -504,6 +504,33 @@ func StatsSlabs(c *Client) (*SlabStatistics, error) {
 	return statistics, err
 }
 
+func StatsItems(c *Client) ([]*ItemStatistics, error) {
+	var statistics []*ItemStatistics
+
+	err := c.do("", func(conn *iopool.Buffer) error {
+		// write the header component
+		if _, err := fmt.Fprintf(conn, "stats items\r\n"); err != nil {
+			return err
+		}
+
+		// flush the connection, forcing bytes over the wire
+		if err := conn.Flush(); err != nil {
+			return err
+		}
+
+		// extract the items stats payload
+		payload, perr := items(conn.Reader)
+		if perr != nil {
+			return perr
+		}
+		statistics = payload
+
+		return nil
+	})
+
+	return statistics, err
+}
+
 func unexpected(response []byte) error {
 	return fmt.Errorf(
 		"unexpected response from memcached %q",

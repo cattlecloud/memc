@@ -292,3 +292,142 @@ SCAN:
 
 	return stats, nil
 }
+
+var (
+	statsItemsRe = regexp.MustCompile(`STAT items:(\d+):(\S+)\s+(\d+)`)
+)
+
+type ItemStatistics struct {
+	Class               int `json:"slab_class"`
+	Number              int `json:"number"`
+	NumberHot           int `json:"number_hot"`
+	NumberWarm          int `json:"number_warm"`
+	NumberCold          int `json:"number_cold"`
+	AgeHot              int `json:"age_hot"`
+	AgeWarm             int `json:"age_warm"`
+	Age                 int `json:"age"`
+	MemRequested        int `json:"mem_requested"`
+	Evicted             int `json:"evicted"`
+	EvictedNonZero      int `json:"evicted_nonzero"`
+	EvictedTime         int `json:"evicted_time"`
+	OutOfMemory         int `json:"outofmemory"`
+	TailRepairs         int `json:"tailrepairs"`
+	Reclaimed           int `json:"reclaimed"`
+	ExpiredUnfetched    int `json:"expired_unfetched"`
+	EvictedUnfetched    int `json:"evicted_unfetched"`
+	EvictedActive       int `json:"evicted_active"`
+	CrawlerReclaimed    int `json:"crawler_reclaimed"`
+	CrawlerItemsChecked int `json:"crawler_items_checked"`
+	LRUTailReflocked    int `json:"lrutail_reflocked"`
+	MovesToCold         int `json:"moves_to_cold"`
+	MovesToWarm         int `json:"moves_to_warm"`
+	MovesWithinLRU      int `json:"moves_within_lru"`
+	DirectReclaims      int `json:"direct_reclaims"`
+	HitsToHot           int `json:"hits_to_hot"`
+	HitsToWarm          int `json:"hits_to_warm"`
+	HitsToCold          int `json:"hits_to_cold"`
+	HitsToTemp          int `json:"hits_to_temp"`
+}
+
+func items(r io.Reader) ([]*ItemStatistics, error) {
+	scanner := bufio.NewScanner(r)
+	m := make(map[int]*ItemStatistics, 4)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if line == "END" {
+			break
+		}
+
+		fields := statsItemsRe.FindStringSubmatch(line)
+		if len(fields) != 4 {
+			continue
+		}
+		slabclass := toInt(fields[1])
+		name := fields[2]
+		value := toInt(fields[3])
+
+		if _, exists := m[slabclass]; !exists {
+			m[slabclass] = new(ItemStatistics)
+		}
+		slab := m[slabclass]
+
+		switch name {
+		case "number":
+			slab.Number = value
+		case "number_hot":
+			slab.NumberHot = value
+		case "number_warm":
+			slab.NumberWarm = value
+		case "number_cold":
+			slab.NumberCold = value
+		case "age_hot":
+			slab.AgeHot = value
+		case "age_warm":
+			slab.AgeWarm = value
+		case "age":
+			slab.Age = value
+		case "mem_requested":
+			slab.MemRequested = value
+		case "evicted":
+			slab.Evicted = value
+		case "evicted_nonzero":
+			slab.EvictedNonZero = value
+		case "evicted_time":
+			slab.EvictedTime = value
+		case "outofmemory":
+			slab.OutOfMemory = value
+		case "tailrepairs":
+			slab.TailRepairs = value
+		case "reclaimed":
+			slab.Reclaimed = value
+		case "expired_unfetched":
+			slab.ExpiredUnfetched = value
+		case "evicted_unfetched":
+			slab.EvictedUnfetched = value
+		case "evicted_active":
+			slab.EvictedActive = value
+		case "crawler_reclaimed":
+			slab.CrawlerReclaimed = value
+		case "crawler_items_checked":
+			slab.CrawlerItemsChecked = value
+		case "lrutail_reflocked":
+			slab.LRUTailReflocked = value
+		case "moves_to_cold":
+			slab.MovesToCold = value
+		case "moves_to_warm":
+			slab.MovesToWarm = value
+		case "moves_within_lru":
+			slab.MovesWithinLRU = value
+		case "direct_reclaims":
+			slab.DirectReclaims = value
+		case "hits_to_hot":
+			slab.HitsToHot = value
+		case "hits_to_warm":
+			slab.HitsToWarm = value
+		case "hits_to_cold":
+			slab.HitsToCold = value
+		case "hits_to_temp":
+			slab.HitsToTemp = value
+		}
+	}
+
+	// ensure the scan was a success
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	results := make([]*ItemStatistics, 0, len(m))
+	for slabclass, v := range m {
+		v.Class = slabclass
+		results = append(results, v)
+	}
+
+	// order by slab class ascending
+	slices.SortFunc(results, func(a, b *ItemStatistics) int {
+		return cmp.Compare(a.Class, b.Class)
+	})
+
+	return results, nil
+}

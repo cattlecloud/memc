@@ -401,3 +401,25 @@ func TestE2E_StatsSlabs(t *testing.T) {
 	must.Positive(t, len(s.Slabs))
 	must.Positive(t, s.Slabs[0].ChunkSize)
 }
+
+func TestE2E_StatsItems(t *testing.T) {
+	t.Parallel()
+
+	address, done := memctest.LaunchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	// insert an item
+	err := Set(c, "mykey", "myvalue", TTL(1*time.Hour))
+	must.NoError(t, err)
+
+	data, derr := StatsItems(c)
+	must.NoError(t, derr)
+
+	// spot check a few fields
+	must.Positive(t, data[0].Class)
+	must.Positive(t, data[0].Number)
+	must.Positive(t, data[0].MemRequested)
+}
