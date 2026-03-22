@@ -1,6 +1,6 @@
 module cattlecloud.net/go/memc
 
-go 1.24
+go 1.26
 
 require (
 	cattlecloud.net/go/scope v1.2.1
