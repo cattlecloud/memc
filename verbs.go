@@ -25,6 +25,7 @@ var (
 	ErrClientClosed = errors.New("memc: client has been closed")
 	ErrNegativeInc  = errors.New("memc: increment delta must be non-negative")
 	ErrNonNumeric   = errors.New("memc: cannot increment non-numeric value")
+	ErrCommandIssue = errors.New("memc: got command error response")
 )
 
 // Options contains configuration parameters that may be applied when executing
