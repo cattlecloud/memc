@@ -80,22 +80,27 @@ func stats(r io.Reader) (*Statistics, error) {
 	scanner := bufio.NewScanner(r)
 	m := make(map[string]string)
 
+SCAN:
 	// parse the contents of the stats output line by line
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "END" {
-			break
-		}
 
-		fields := strings.Fields(line)
-		if len(fields) < 3 || fields[0] != "STAT" {
-			continue
-		}
+		switch line {
+		case "END":
+			break SCAN
 
-		// skip fields[0], is STAT
-		key := fields[1]
-		value := fields[2]
-		m[key] = value
+		case "ERROR":
+			return nil, ErrCommandIssue
+
+		default:
+			fields := strings.Fields(line)
+			if len(fields) < 3 || fields[0] != "STAT" {
+				continue
+			}
+			key := fields[1]
+			value := fields[2]
+			m[key] = value
+		}
 	}
 
 	// make sure the scanner was successful
@@ -217,6 +222,9 @@ SCAN:
 		case line == "END":
 			break SCAN
 
+		case line == "ERROR":
+			return nil, ErrCommandIssue
+
 		case strings.HasPrefix(line, "STAT active_slabs"):
 			fields := strings.Fields(line)
 			active := toInt(fields[2])
@@ -333,83 +341,89 @@ func items(r io.Reader) ([]*ItemStatistics, error) {
 	scanner := bufio.NewScanner(r)
 	m := make(map[int]*ItemStatistics, 4)
 
+SCAN:
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if line == "END" {
-			break
-		}
+		switch line {
+		case "END":
+			break SCAN
 
-		fields := statsItemsRe.FindStringSubmatch(line)
-		if len(fields) != 4 {
-			continue
-		}
-		slabclass := toInt(fields[1])
-		name := fields[2]
-		value := toInt(fields[3])
+		case "ERROR":
+			return nil, ErrCommandIssue
 
-		if _, exists := m[slabclass]; !exists {
-			m[slabclass] = new(ItemStatistics)
-		}
-		slab := m[slabclass]
+		default:
+			fields := statsItemsRe.FindStringSubmatch(line)
+			if len(fields) != 4 {
+				continue
+			}
+			slabclass := toInt(fields[1])
+			name := fields[2]
+			value := toInt(fields[3])
 
-		switch name {
-		case "number":
-			slab.Number = value
-		case "number_hot":
-			slab.NumberHot = value
-		case "number_warm":
-			slab.NumberWarm = value
-		case "number_cold":
-			slab.NumberCold = value
-		case "age_hot":
-			slab.AgeHot = value
-		case "age_warm":
-			slab.AgeWarm = value
-		case "age":
-			slab.Age = value
-		case "mem_requested":
-			slab.MemRequested = value
-		case "evicted":
-			slab.Evicted = value
-		case "evicted_nonzero":
-			slab.EvictedNonZero = value
-		case "evicted_time":
-			slab.EvictedTime = value
-		case "outofmemory":
-			slab.OutOfMemory = value
-		case "tailrepairs":
-			slab.TailRepairs = value
-		case "reclaimed":
-			slab.Reclaimed = value
-		case "expired_unfetched":
-			slab.ExpiredUnfetched = value
-		case "evicted_unfetched":
-			slab.EvictedUnfetched = value
-		case "evicted_active":
-			slab.EvictedActive = value
-		case "crawler_reclaimed":
-			slab.CrawlerReclaimed = value
-		case "crawler_items_checked":
-			slab.CrawlerItemsChecked = value
-		case "lrutail_reflocked":
-			slab.LRUTailReflocked = value
-		case "moves_to_cold":
-			slab.MovesToCold = value
-		case "moves_to_warm":
-			slab.MovesToWarm = value
-		case "moves_within_lru":
-			slab.MovesWithinLRU = value
-		case "direct_reclaims":
-			slab.DirectReclaims = value
-		case "hits_to_hot":
-			slab.HitsToHot = value
-		case "hits_to_warm":
-			slab.HitsToWarm = value
-		case "hits_to_cold":
-			slab.HitsToCold = value
-		case "hits_to_temp":
-			slab.HitsToTemp = value
+			if _, exists := m[slabclass]; !exists {
+				m[slabclass] = new(ItemStatistics)
+			}
+			slab := m[slabclass]
+
+			switch name {
+			case "number":
+				slab.Number = value
+			case "number_hot":
+				slab.NumberHot = value
+			case "number_warm":
+				slab.NumberWarm = value
+			case "number_cold":
+				slab.NumberCold = value
+			case "age_hot":
+				slab.AgeHot = value
+			case "age_warm":
+				slab.AgeWarm = value
+			case "age":
+				slab.Age = value
+			case "mem_requested":
+				slab.MemRequested = value
+			case "evicted":
+				slab.Evicted = value
+			case "evicted_nonzero":
+				slab.EvictedNonZero = value
+			case "evicted_time":
+				slab.EvictedTime = value
+			case "outofmemory":
+				slab.OutOfMemory = value
+			case "tailrepairs":
+				slab.TailRepairs = value
+			case "reclaimed":
+				slab.Reclaimed = value
+			case "expired_unfetched":
+				slab.ExpiredUnfetched = value
+			case "evicted_unfetched":
+				slab.EvictedUnfetched = value
+			case "evicted_active":
+				slab.EvictedActive = value
+			case "crawler_reclaimed":
+				slab.CrawlerReclaimed = value
+			case "crawler_items_checked":
+				slab.CrawlerItemsChecked = value
+			case "lrutail_reflocked":
+				slab.LRUTailReflocked = value
+			case "moves_to_cold":
+				slab.MovesToCold = value
+			case "moves_to_warm":
+				slab.MovesToWarm = value
+			case "moves_within_lru":
+				slab.MovesWithinLRU = value
+			case "direct_reclaims":
+				slab.DirectReclaims = value
+			case "hits_to_hot":
+				slab.HitsToHot = value
+			case "hits_to_warm":
+				slab.HitsToWarm = value
+			case "hits_to_cold":
+				slab.HitsToCold = value
+			case "hits_to_temp":
+				slab.HitsToTemp = value
+			}
 		}
 	}
 
