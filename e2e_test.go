@@ -201,6 +201,33 @@ func TestE2E_Replace(t *testing.T) {
 	})
 }
 
+func TestE2E_Append(t *testing.T) {
+	t.Parallel()
+
+	address, done := memctest.LaunchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	t.Run("success", func(t *testing.T) {
+		err := Set(c, "key1", "value1")
+		must.NoError(t, err)
+
+		err = Append(c, "key1", ".appended")
+		must.NoError(t, err)
+
+		v, verr := Get[string](c, "key1")
+		must.NoError(t, verr)
+		must.Eq(t, "value1.appended", v)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		err := Append(c, "key-does-not-exist", "value")
+		must.ErrorIs(t, err, ErrNotStored)
+	})
+}
+
 func TestE2E_Increment(t *testing.T) {
 	t.Parallel()
 
