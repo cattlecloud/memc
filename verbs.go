@@ -689,6 +689,48 @@ func getPayloadWithCAS(r *bufio.Reader) ([]byte, uint64, error) {
 	return payload, cas, nil
 }
 
+// Flush will delete all items from memcached.
+//
+// The timeout parameter is optional. A timeout of 0 means flush right now.
+// A non-zero timeout will delay the flush by that many seconds.
+//
+// Note: this operation is performed on a single memcached server, even when
+// the Client is configured with multiple server addresses. This is intentional,
+// as flush is typically used by local administration tools that connect to a
+// single memcached instance.
+func Flush(c *Client, timeout time.Duration) error {
+	return c.do("", func(conn *iopool.Buffer) error {
+		expiration, err := c.seconds(timeout)
+		if err != nil {
+			return err
+		}
+
+		if _, err := fmt.Fprintf(
+			conn,
+			"flush_all %d\r\n",
+			expiration,
+		); err != nil {
+			return err
+		}
+
+		if err := conn.Flush(); err != nil {
+			return err
+		}
+
+		line, lerr := conn.ReadSlice('\n')
+		if lerr != nil {
+			return lerr
+		}
+
+		switch string(line) {
+		case "OK\r\n":
+			return nil
+		default:
+			return unexpected(line)
+		}
+	})
+}
+
 // Delete will remove the value associated with key from memcached.
 //
 // Uses Client c to connect to a memcached instance, and automatically handles
@@ -857,6 +899,12 @@ func Decrement[T Countable](c *Client, key string, delta T) (T, error) {
 	return result, err
 }
 
+// Stats returns runtime statistics for a single memcached server.
+//
+// Note: this operation is performed on a single memcached server, even when
+// the Client is configured with multiple server addresses. This is intentional,
+// as stats is typically used by local monitoring tools that connect to a
+// single memcached instance.
 func Stats(c *Client) (*Statistics, error) {
 	var statistics *Statistics
 
@@ -884,6 +932,12 @@ func Stats(c *Client) (*Statistics, error) {
 	return statistics, err
 }
 
+// StatsSlabs returns slab statistics for a single memcached server.
+//
+// Note: this operation is performed on a single memcached server, even when
+// the Client is configured with multiple server addresses. This is intentional,
+// as stats is typically used by local monitoring tools that connect to a
+// single memcached instance.
 func StatsSlabs(c *Client) (*SlabStatistics, error) {
 	var statistics *SlabStatistics
 
@@ -911,6 +965,12 @@ func StatsSlabs(c *Client) (*SlabStatistics, error) {
 	return statistics, err
 }
 
+// StatsItems returns item statistics for a single memcached server.
+//
+// Note: this operation is performed on a single memcached server, even when
+// the Client is configured with multiple server addresses. This is intentional,
+// as stats is typically used by local monitoring tools that connect to a
+// single memcached instance.
 func StatsItems(c *Client) ([]*ItemStatistics, error) {
 	var statistics []*ItemStatistics
 

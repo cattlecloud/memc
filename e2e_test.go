@@ -508,6 +508,36 @@ func TestE2E_StatsItems(t *testing.T) {
 	must.Positive(t, data[0].MemRequested)
 }
 
+func TestE2E_Flush(t *testing.T) {
+	t.Parallel()
+
+	address, done := memctest.LaunchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	t.Run("success", func(t *testing.T) {
+		err := Set(c, "key1", "value1")
+		must.NoError(t, err)
+
+		v, verr := Get[string](c, "key1")
+		must.NoError(t, verr)
+		must.Eq(t, "value1", v)
+
+		err = Flush(c, 0)
+		must.NoError(t, err)
+
+		_, err = Get[string](c, "key1")
+		must.ErrorIs(t, err, ErrCacheMiss)
+	})
+
+	t.Run("empty cache", func(t *testing.T) {
+		err := Flush(c, 0)
+		must.NoError(t, err)
+	})
+}
+
 func TestE2E_CAS(t *testing.T) {
 	t.Parallel()
 
