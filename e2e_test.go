@@ -507,3 +507,65 @@ func TestE2E_StatsItems(t *testing.T) {
 	must.Positive(t, data[0].Number)
 	must.Positive(t, data[0].MemRequested)
 }
+
+func TestE2E_CAS(t *testing.T) {
+	t.Parallel()
+
+	address, done := memctest.LaunchTCP(t, nil)
+	t.Cleanup(done)
+
+	c := New([]string{address})
+	defer ignore.Close(c)
+
+	t.Run("success", func(t *testing.T) {
+		err := Set(c, "key1", "value1")
+		must.NoError(t, err)
+
+		v, cas, verr := Gets[string](c, "key1")
+		must.NoError(t, verr)
+		must.Eq(t, "value1", v)
+		must.Positive(t, uint64(cas))
+
+		err = CompareAndSwap(c, "key1", cas, "value1.updated")
+		must.NoError(t, err)
+
+		v, err = Get[string](c, "key1")
+		must.NoError(t, err)
+		must.Eq(t, "value1.updated", v)
+	})
+
+	t.Run("conflict", func(t *testing.T) {
+		err := Set(c, "key2", "original")
+		must.NoError(t, err)
+
+		_, cas1, verr := Gets[string](c, "key2")
+		must.NoError(t, verr)
+
+		_, _, verr = Gets[string](c, "key2")
+		must.NoError(t, verr)
+
+		err = CompareAndSwap(c, "key2", cas1, "first-update")
+		must.NoError(t, err)
+
+		err = CompareAndSwap(c, "key2", cas1, "stale-update")
+		must.ErrorIs(t, err, ErrConflict)
+
+		v, err := Get[string](c, "key2")
+		must.NoError(t, err)
+		must.Eq(t, "first-update", v)
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		err := Set(c, "key3", "value3")
+		must.NoError(t, err)
+
+		_, cas, verr := Gets[string](c, "key3")
+		must.NoError(t, verr)
+
+		err = Delete(c, "key3")
+		must.NoError(t, err)
+
+		err = CompareAndSwap(c, "key3", cas, "newvalue")
+		must.ErrorIs(t, err, ErrNotFound)
+	})
+}
