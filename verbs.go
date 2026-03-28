@@ -203,6 +203,85 @@ func Replace[T any](c *Client, key string, item T, opts ...Option) error {
 	})
 }
 
+// Prepend will prepend the given value to the value associated with the given key.
+//
+// Prepend differs from Set in that it is meant to add additional data to an
+// existing key, rather than replace the existing value entirely. The key
+// must already exist.
+//
+// Uses Client c to connect to a memcached instance, and automatically handles
+// connection pooling and reuse.
+//
+// One or more Option(s) may be applied to configure things such as the
+// value expiration TTL or its associated flags.
+func Prepend[T any](c *Client, key string, item T, opts ...Option) error {
+	if err := check(key); err != nil {
+		return err
+	}
+
+	options := &Options{
+		expiration: c.expiration,
+		flags:      0,
+	}
+
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	return c.do(key, func(conn *iopool.Buffer) error {
+		encoding, encerr := encode(item)
+		if encerr != nil {
+			return encerr
+		}
+
+		expiration, experr := c.seconds(options.expiration)
+		if experr != nil {
+			return experr
+		}
+
+		// write the header components
+		if _, err := fmt.Fprintf(
+			conn,
+			"prepend %s %d %d %d\r\n",
+			key, options.flags, expiration, len(encoding),
+		); err != nil {
+			return err
+		}
+
+		// write the payload
+		if _, err := conn.Write(encoding); err != nil {
+			return err
+		}
+
+		// write clrf
+		if _, err := io.WriteString(conn, "\r\n"); err != nil {
+			return err
+		}
+
+		// flush the buffer
+		if err := conn.Flush(); err != nil {
+			return err
+		}
+
+		// read response
+		line, lerr := conn.ReadSlice('\n')
+		if lerr != nil {
+			return lerr
+		}
+
+		switch string(line) {
+		case "STORED\r\n":
+			return nil
+		case "NOT_STORED\r\n":
+			return ErrNotStored
+		case "NOT_FOUND\r\n":
+			return ErrNotFound
+		default:
+			return fmt.Errorf("memc: unexpected response to prepend: %q", string(line))
+		}
+	})
+}
+
 // Append will append the given value to the value associated with the given key.
 //
 // Append differs from Set in that it is meant to add additional data to an
