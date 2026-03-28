@@ -44,10 +44,10 @@ type Buffer struct {
 
 func newBuffer(conn Connection) *Buffer {
 	return &Buffer{
-		bufio.NewReader(conn),
-		bufio.NewWriter(conn),
-		conn,
-		new(atomic.Bool),
+		Reader:  bufio.NewReader(conn),
+		Writer:  bufio.NewWriter(conn),
+		Closer:  conn,
+		failure: new(atomic.Bool),
 	}
 }
 
