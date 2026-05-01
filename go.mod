@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	cattlecloud.net/go/scope v1.2.1
-	cattlecloud.net/go/stacks v1.1.2
+	cattlecloud.net/go/stacks v1.1.3
 	github.com/shoenig/ignore v0.4.0
 	github.com/shoenig/test v1.12.2
 )
