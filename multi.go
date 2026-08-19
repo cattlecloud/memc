@@ -22,10 +22,10 @@ type Pair[T, U any] struct {
 //
 // One or more Option(s) may be applied to configure things such as the
 // value expiration TTL or its associated flags.
-func SetMulti[T any](c *Client, items []*Pair[string, T], opts ...Option) error {
+func (c *Client) SetMulti[T any](items []*Pair[string, T], opts ...Option) error {
 	var errs []error
 	for _, item := range items {
-		if err := Set(c, item.A, item.B, opts...); err != nil {
+		if err := c.Set(item.A, item.B, opts...); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -43,10 +43,10 @@ func SetMulti[T any](c *Client, items []*Pair[string, T], opts ...Option) error 
 //
 // One or more Option(s) may be applied to configure things such as the
 // value expiration TTL or its associated flags.
-func AddMulti[T any](c *Client, items []*Pair[string, T], opts ...Option) error {
+func (c *Client) AddMulti[T any](items []*Pair[string, T], opts ...Option) error {
 	var errs []error
 	for _, item := range items {
-		if err := Add(c, item.A, item.B, opts...); err != nil {
+		if err := c.Add(item.A, item.B, opts...); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -58,10 +58,10 @@ func AddMulti[T any](c *Client, items []*Pair[string, T], opts ...Option) error 
 //
 // Uses Client c to connect to a memcached instance, and automatically handles
 // connection pooling and reuse.
-func GetMulti[T any](c *Client, keys []string) []*Pair[T, error] {
+func (c *Client) GetMulti[T any](keys []string) []*Pair[T, error] {
 	results := make([]*Pair[T, error], 0, len(keys))
 	for _, key := range keys {
-		v, err := Get[T](c, key)
+		v, err := c.Get[T](key)
 		if err != nil {
 			results = append(results, &Pair[T, error]{B: err})
 		} else {

@@ -42,7 +42,7 @@ client := memc.New(
 ##### Setting a value in memcached.
 
 ```go
-err := memc.Set(client, "my/key/name", "some_value")
+err := client.Set("my/key/name", "some_value")
 ```
 
 Note that the `memc` library can handle arbitrary value types, as long as they
@@ -50,7 +50,7 @@ can be encoded using Go's built-in `gob` package. The library automatically
 handles serialization on writes and de-serialization on reads.
 
 ```go
-err := memc.Set(client, "my/key/name", &Person{Name: "Bob"})
+err := client.Set("my/key/name", &Person{Name: "Bob"})
 ```
 
 ##### Reading a value from memcached.
@@ -59,7 +59,7 @@ The `memc` package will automatically convert the value `[]byte` into the type
 of your Go variable.
 
 ```go
-value, err := memc.Get[T](client, "my/key/name")
+value, err := client.Get[T]("my/key/name")
 ```
 
 ##### Incrementing/Decrementing a counter in memcached.
@@ -70,20 +70,20 @@ and must be in the form of an ASCII string representation of a number. The delta
 value must be positive.
 
 ```go
-err := memc.Set(client, "/my/counter", "100")
+err := client.Set("/my/counter", "100")
 ```
 
 Using `Increment` to increase the counter value by 1.
 
 ```go
-v, err := memc.Increment("/my/counter", 1)
+v, err := client.Increment("/my/counter", 1)
 // v is now 101
 ```
 
 Using `Decrement` to decrease the value by 5.
 
 ```go
-v, err := memc.Decrement("/my/counter", 5)
+v, err := client.Decrement("/my/counter", 5)
 // v is now 96
 ```
 
@@ -136,7 +136,7 @@ consuming resources. In-flight requests will be closed once complete. Once
 closed the client cannot be reused.
 
 ```go
-_ = memc.Close()
+_ = client.Close()
 ```
 
 ### License
