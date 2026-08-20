@@ -21,53 +21,53 @@ func TestUnix_simple(t *testing.T) {
 	defer ignore.Close(c)
 
 	t.Run("string", func(t *testing.T) {
-		err := Set(c, "mystring", "myvalue")
+		err := c.Set("mystring", "myvalue")
 		must.NoError(t, err)
 
 		var v string
-		v, err = Get[string](c, "mystring")
+		v, err = c.Get[string]("mystring")
 		must.NoError(t, err)
 		must.Eq(t, "myvalue", v)
 	})
 
 	t.Run("[]byte", func(t *testing.T) {
-		err := Set(c, "mybytes", []byte{2, 4, 6, 8})
+		err := c.Set("mybytes", []byte{2, 4, 6, 8})
 		must.NoError(t, err)
 
 		var v []byte
-		v, err = Get[[]byte](c, "mybytes")
+		v, err = c.Get[[]byte]("mybytes")
 		must.NoError(t, err)
 		must.Eq(t, []byte{2, 4, 6, 8}, v)
 	})
 
 	t.Run("int", func(t *testing.T) {
-		err := Set(c, "myint", 998877)
+		err := c.Set("myint", 998877)
 		must.NoError(t, err)
 
 		var v int
-		v, err = Get[int](c, "myint")
+		v, err = c.Get[int]("myint")
 		must.NoError(t, err)
 		must.Eq(t, 998877, v)
 	})
 
 	t.Run("struct pointer", func(t *testing.T) {
 		p := &person{Name: "Seth", Age: 34}
-		err := Set(c, "myperson_p", p)
+		err := c.Set("myperson_p", p)
 		must.NoError(t, err)
 
 		var v *person
-		v, err = Get[*person](c, "myperson_p")
+		v, err = c.Get[*person]("myperson_p")
 		must.NoError(t, err)
 		must.Eq(t, &person{Name: "Seth", Age: 34}, v)
 	})
 
 	t.Run("struct value", func(t *testing.T) {
 		p := person{Name: "Seth", Age: 34}
-		err := Set(c, "myperson_v", p)
+		err := c.Set("myperson_v", p)
 		must.NoError(t, err)
 
 		var v person
-		v, err = Get[person](c, "myperson_v")
+		v, err = c.Get[person]("myperson_v")
 		must.NoError(t, err)
 		must.Eq(t, person{Name: "Seth", Age: 34}, v)
 	})

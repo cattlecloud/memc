@@ -67,7 +67,7 @@ func Flags(flags int) Option {
 //
 // One or more Option(s) may be applied to configure things such as the
 // value expiration TTL or its associated flags.
-func Set[T any](c *Client, key string, item T, opts ...Option) error {
+func (c *Client) Set[T any](key string, item T, opts ...Option) error {
 	if err := check(key); err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func Set[T any](c *Client, key string, item T, opts ...Option) error {
 //
 // One or more Option(s) may be applied to configure things such as the
 // value expiration TTL or its associated flags.
-func Replace[T any](c *Client, key string, item T, opts ...Option) error {
+func (c *Client) Replace[T any](key string, item T, opts ...Option) error {
 	if err := check(key); err != nil {
 		return err
 	}
@@ -218,7 +218,7 @@ func Replace[T any](c *Client, key string, item T, opts ...Option) error {
 //
 // One or more Option(s) may be applied to configure things such as the
 // value expiration TTL or its associated flags.
-func Prepend[T any](c *Client, key string, item T, opts ...Option) error {
+func (c *Client) Prepend[T any](key string, item T, opts ...Option) error {
 	if err := check(key); err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func Prepend[T any](c *Client, key string, item T, opts ...Option) error {
 //
 // One or more Option(s) may be applied to configure things such as the
 // value expiration TTL or its associated flags.
-func Append[T any](c *Client, key string, item T, opts ...Option) error {
+func (c *Client) Append[T any](key string, item T, opts ...Option) error {
 	if err := check(key); err != nil {
 		return err
 	}
@@ -373,7 +373,7 @@ func Append[T any](c *Client, key string, item T, opts ...Option) error {
 //
 // One or more Option(s) may be applied to configure things such as the
 // value expiration TTL or its associated flags.
-func Add[T any](c *Client, key string, item T, opts ...Option) error {
+func (c *Client) Add[T any](key string, item T, opts ...Option) error {
 	if err := check(key); err != nil {
 		return err
 	}
@@ -455,7 +455,7 @@ func Add[T any](c *Client, key string, item T, opts ...Option) error {
 //
 // One or more Option(s) may be applied to configure things such as the value
 // expiration TTL or its associated flags.
-func CompareAndSwap[T any](c *Client, key string, cas CAS, item T, opts ...Option) error {
+func (c *Client) CompareAndSwap[T any](key string, cas CAS, item T, opts ...Option) error {
 	if err := check(key); err != nil {
 		return err
 	}
@@ -527,7 +527,7 @@ func CompareAndSwap[T any](c *Client, key string, cas CAS, item T, opts ...Optio
 //
 // Uses Client c to connect to a memcached instance, and automatically handles
 // connection pooling and reuse.
-func Get[T any](c *Client, key string) (T, error) {
+func (c *Client) Get[T any](key string) (T, error) {
 	var result T
 
 	if err := check(key); err != nil {
@@ -566,7 +566,7 @@ func Get[T any](c *Client, key string) (T, error) {
 //
 // Uses Client c to connect to a memcached instance, and automatically handles
 // connection pooling and reuse.
-func Gets[T any](c *Client, key string) (T, CAS, error) {
+func (c *Client) Gets[T any](key string) (T, CAS, error) {
 	var result T
 	var casToken CAS
 
@@ -698,7 +698,7 @@ func getPayloadWithCAS(r *bufio.Reader) ([]byte, uint64, error) {
 // the Client is configured with multiple server addresses. This is intentional,
 // as flush is typically used by local administration tools that connect to a
 // single memcached instance.
-func Flush(c *Client, timeout time.Duration) error {
+func (c *Client) Flush(timeout time.Duration) error {
 	return c.do("", func(conn *iopool.Buffer) error {
 		expiration, err := c.seconds(timeout)
 		if err != nil {
@@ -735,7 +735,7 @@ func Flush(c *Client, timeout time.Duration) error {
 //
 // Uses Client c to connect to a memcached instance, and automatically handles
 // connection pooling and reuse.
-func Delete(c *Client, key string) error {
+func (c *Client) Delete(key string) error {
 	if err := check(key); err != nil {
 		return err
 	}
@@ -778,7 +778,7 @@ func Delete(c *Client, key string) error {
 //
 //	Set(client, "counter", "100")
 //	Increment(client, "counter", 1) // counter = 101
-func Increment[T Countable](c *Client, key string, delta T) (T, error) {
+func (c *Client) Increment[T Countable](key string, delta T) (T, error) {
 	if err := check(key); err != nil {
 		return T(0), err
 	}
@@ -842,7 +842,7 @@ func Increment[T Countable](c *Client, key string, delta T) (T, error) {
 //
 //	Set(client, "counter", "100")
 //	Decrement(client, "counter", 1) // counter = 99
-func Decrement[T Countable](c *Client, key string, delta T) (T, error) {
+func (c *Client) Decrement[T Countable](key string, delta T) (T, error) {
 	if err := check(key); err != nil {
 		return T(0), err
 	}
@@ -905,7 +905,7 @@ func Decrement[T Countable](c *Client, key string, delta T) (T, error) {
 // the Client is configured with multiple server addresses. This is intentional,
 // as stats is typically used by local monitoring tools that connect to a
 // single memcached instance.
-func Stats(c *Client) (*Statistics, error) {
+func (c *Client) Stats() (*Statistics, error) {
 	var statistics *Statistics
 
 	err := c.do("", func(conn *iopool.Buffer) error {
@@ -938,7 +938,7 @@ func Stats(c *Client) (*Statistics, error) {
 // the Client is configured with multiple server addresses. This is intentional,
 // as stats is typically used by local monitoring tools that connect to a
 // single memcached instance.
-func StatsSlabs(c *Client) (*SlabStatistics, error) {
+func (c *Client) StatsSlabs() (*SlabStatistics, error) {
 	var statistics *SlabStatistics
 
 	err := c.do("", func(conn *iopool.Buffer) error {
@@ -971,7 +971,7 @@ func StatsSlabs(c *Client) (*SlabStatistics, error) {
 // the Client is configured with multiple server addresses. This is intentional,
 // as stats is typically used by local monitoring tools that connect to a
 // single memcached instance.
-func StatsItems(c *Client) ([]*ItemStatistics, error) {
+func (c *Client) StatsItems() ([]*ItemStatistics, error) {
 	var statistics []*ItemStatistics
 
 	err := c.do("", func(conn *iopool.Buffer) error {
