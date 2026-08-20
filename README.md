@@ -2,10 +2,10 @@
 
 `memc` is a modern and generics enabled memcached client library for Go.
 
-_requires go1.23+_
+_requires go1.27+_
 
-October 2024:
-(!) This package is very new and may contain bugs and missing features.
+August 2026:
+(!) This package was refactored to make use of generic methods in Go 1.27.
 
 ### Getting Started
 
